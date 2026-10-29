@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Radio, MapPin, Eye, AlertCircle, Compass, Layers, Shield, 
-  Flame, Activity, Zap, SlidersHorizontal, Target, Info, Check
+  Flame, Activity, Zap, SlidersHorizontal, Target, Info, Check,
+  ArrowUpRight, ExternalLink, FileText, Sparkles
 } from 'lucide-react';
 import { SightingReport, ReportStatus } from '../types';
 
@@ -39,6 +40,7 @@ export const OmahaRadarMap: React.FC<OmahaRadarMapProps> = ({
   const [viewMode, setViewMode] = useState<'hybrid' | 'heatmap' | 'pins'>('hybrid');
   const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'pending'>('all');
   const [focusedHotspotId, setFocusedHotspotId] = useState<string | null>(null);
+  const [sidebarTab, setSidebarTab] = useState<'dossier' | 'pins' | 'hotspots'>('dossier');
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -452,7 +454,7 @@ export const OmahaRadarMap: React.FC<OmahaRadarMapProps> = ({
           </div>
 
           {/* Map Top Status Bar */}
-          <div className="flex items-center justify-between text-xs text-slate-400 z-10 font-mono">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 z-10 font-mono">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
               <span className="text-cyan-300 font-bold">RADAR SWEEP ACTIVE</span>
@@ -465,9 +467,15 @@ export const OmahaRadarMap: React.FC<OmahaRadarMapProps> = ({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1.5">
-              <Compass className="w-4 h-4 text-slate-500" />
-              <span>N 41.2586° / W 95.9375°</span>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center gap-1 text-[11px] font-sans font-medium text-cyan-300 bg-cyan-950/70 border border-cyan-500/40 px-2 py-0.5 rounded-md shadow-sm">
+                <MapPin className="w-3 h-3 text-cyan-400" />
+                <span>Click any pin to open CaseDetailModal</span>
+              </span>
+              <div className="hidden sm:flex items-center gap-1.5 text-slate-500">
+                <Compass className="w-4 h-4" />
+                <span>N 41.2586° / W 95.9375°</span>
+              </div>
             </div>
           </div>
 
@@ -587,43 +595,144 @@ export const OmahaRadarMap: React.FC<OmahaRadarMapProps> = ({
               ▲ Platte River State Park
             </div>
 
-            {/* Plot Sighting Case Markers (Visible in 'hybrid' or 'pins' mode) */}
-            {viewMode !== 'heatmap' && activeReports.map((rep) => {
+            {/* Plot Sighting Case Markers (Clickable Pins that open CaseDetailModal) */}
+            {activeReports.map((rep) => {
               const coords = toMapCoords(rep.location.lat, rep.location.lng);
               const isSelected = rep.id === selectedCaseId;
 
-              let markerColor = 'bg-cyan-500 text-white';
-              if (rep.status === 'draft') markerColor = 'bg-cyan-800 text-cyan-200 ring-1 ring-cyan-400';
-              if (rep.status === 'pending') markerColor = 'bg-amber-500 text-slate-950 ring-2 ring-amber-300 animate-pulse';
-              if (rep.status === 'approved') markerColor = 'bg-emerald-500 text-slate-950 ring-2 ring-emerald-300';
-              if (rep.status === 'rejected') markerColor = 'bg-rose-500 text-white';
+              // Distinct theme colors based on report status
+              let pinTheme = {
+                bg: 'bg-emerald-600',
+                border: 'border-emerald-300',
+                text: 'text-white',
+                glow: 'shadow-[0_0_12px_rgba(16,185,129,0.7)]',
+                needle: 'bg-emerald-400',
+                pulse: 'bg-emerald-400/40',
+                ring: 'ring-emerald-400'
+              };
+
+              if (rep.status === 'pending') {
+                pinTheme = {
+                  bg: 'bg-amber-500',
+                  border: 'border-amber-200',
+                  text: 'text-slate-950 font-bold',
+                  glow: 'shadow-[0_0_16px_rgba(245,158,11,0.8)]',
+                  needle: 'bg-amber-400',
+                  pulse: 'bg-amber-400/60',
+                  ring: 'ring-amber-300'
+                };
+              } else if (rep.status === 'rejected') {
+                pinTheme = {
+                  bg: 'bg-rose-600',
+                  border: 'border-rose-300',
+                  text: 'text-white',
+                  glow: 'shadow-[0_0_12px_rgba(244,63,94,0.7)]',
+                  needle: 'bg-rose-400',
+                  pulse: 'bg-rose-400/40',
+                  ring: 'ring-rose-400'
+                };
+              } else if (rep.status === 'draft') {
+                pinTheme = {
+                  bg: 'bg-cyan-800',
+                  border: 'border-cyan-400',
+                  text: 'text-cyan-200',
+                  glow: 'shadow-[0_0_10px_rgba(6,182,212,0.5)]',
+                  needle: 'bg-cyan-400',
+                  pulse: 'bg-cyan-400/40',
+                  ring: 'ring-cyan-400'
+                };
+              }
 
               return (
-                <div
+                <button
+                  type="button"
                   key={rep.id}
-                  onClick={() => setSelectedCaseId(rep.id)}
+                  onClick={() => {
+                    setSelectedCaseId(rep.id);
+                    onSelectReport(rep);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedCaseId(rep.id);
+                      onSelectReport(rep);
+                    }
+                  }}
                   style={{
                     left: `${coords.x}%`,
                     top: `${coords.y}%`,
-                    transform: 'translate(-50%, -50%)'
+                    transform: 'translate(-50%, -100%)'
                   }}
-                  className="absolute cursor-pointer z-30 group"
+                  className={`absolute cursor-pointer z-30 group focus:outline-none transition-all duration-200 ${
+                    isSelected ? 'z-40 scale-110' : 'hover:scale-115 hover:z-50'
+                  }`}
+                  title={`Click pin to open CaseDetailModal: ${rep.caseNumber} - ${rep.title}`}
+                  aria-label={`Open CaseDetailModal for ${rep.caseNumber} (${rep.title})`}
                 >
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] shadow-lg transition-transform ${
-                    isSelected ? 'scale-125 ring-4 ring-cyan-400 z-40' : 'group-hover:scale-110'
-                  } ${markerColor}`}>
-                    {rep.classification.hynek}
+                  {/* Ground Coordinate Pulse & Blip */}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                    <div className={`w-2.5 h-2.5 rounded-full ${pinTheme.needle} ${pinTheme.glow}`} />
+                    {rep.status === 'pending' && (
+                      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full ${pinTheme.pulse} animate-ping`} />
+                    )}
                   </div>
 
-                  {/* Tooltip on hover */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block bg-slate-950 border border-slate-800 text-white text-[11px] px-2.5 py-1.5 rounded-lg shadow-2xl whitespace-nowrap z-50 font-sans pointer-events-none">
-                    <div className="font-bold font-mono text-cyan-400">{rep.caseNumber}</div>
-                    <div className="text-slate-300 font-semibold">{rep.title}</div>
-                    <div className="text-[10px] text-slate-400">
-                      {rep.location.city} · {rep.classification.shape} · Credibility: {rep.credibilityScore}%
+                  {/* Teardrop Pin Marker Body */}
+                  <div className="flex flex-col items-center">
+                    {/* Pin Head */}
+                    <div className={`px-2 py-0.5 rounded-md flex items-center gap-1 text-[10px] font-mono border shadow-2xl transition-all ${pinTheme.bg} ${pinTheme.border} ${pinTheme.text} ${pinTheme.glow} ${
+                      isSelected ? `ring-2 ${pinTheme.ring}` : ''
+                    }`}>
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="font-bold">{rep.classification.hynek}</span>
+                      <span className="opacity-90 text-[9px] border-l border-white/30 pl-1 font-semibold">
+                        {rep.caseNumber.split('-')[2] || rep.caseNumber}
+                      </span>
+                    </div>
+
+                    {/* Pin Needle pointer pointing to coordinate */}
+                    <div className={`w-0.5 h-2.5 ${pinTheme.needle} shadow-md`} />
+                  </div>
+
+                  {/* Rich Interactive Hover Card */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col bg-slate-950/95 border border-cyan-500/70 text-white text-[11px] p-3 rounded-xl shadow-2xl min-w-[250px] max-w-[280px] z-50 font-sans pointer-events-none backdrop-blur-md animate-in fade-in zoom-in-95 text-left">
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-1.5 mb-1.5">
+                      <span className="font-bold font-mono text-cyan-400">{rep.caseNumber}</span>
+                      <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded ${
+                        rep.status === 'approved' 
+                          ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' 
+                          : rep.status === 'pending'
+                          ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                          : rep.status === 'draft'
+                          ? 'bg-cyan-950 text-cyan-300 border border-cyan-800'
+                          : 'bg-rose-950 text-rose-300 border border-rose-800'
+                      }`}>
+                        {rep.status}
+                      </span>
+                    </div>
+
+                    <div className="text-slate-100 font-semibold text-xs leading-snug line-clamp-2">
+                      {rep.title}
+                    </div>
+
+                    <div className="text-[10px] text-slate-400 mt-1.5 space-y-0.5 font-mono">
+                      <div className="flex items-center justify-between">
+                        <span>📍 {rep.location.city}, {rep.location.state}</span>
+                        <span className="text-emerald-400 font-semibold">{rep.credibilityScore}% Score</span>
+                      </div>
+                      <div>⚡ {rep.classification.shape} · {rep.classification.duration}</div>
+                      <div className="text-slate-500 truncate">{rep.location.landmarkProximity}</div>
+                    </div>
+
+                    <div className="mt-2.5 pt-2 border-t border-slate-800/80 text-[10px] font-semibold text-cyan-300 flex items-center justify-between bg-cyan-950/50 -mx-3 -mb-3 px-3 py-1.5 rounded-b-xl border-t border-cyan-500/30">
+                      <span className="flex items-center gap-1 text-cyan-300">
+                        <Eye className="w-3 h-3 text-cyan-400" />
+                        Click to open CaseDetailModal
+                      </span>
+                      <ArrowUpRight className="w-3 h-3 text-cyan-400" />
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -668,133 +777,255 @@ export const OmahaRadarMap: React.FC<OmahaRadarMapProps> = ({
           </div>
         </div>
 
-        {/* Right Sidebar: Selected Case Dossier & Hotspot Zone Correlator */}
-        <div className="space-y-6">
-          {/* Selected Case Telemetry Panel */}
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-lg">
-            {selectedReport ? (
-              <div className="space-y-4 text-xs">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                  <span className="font-mono font-bold text-cyan-400 bg-cyan-950 px-2.5 py-1 rounded border border-cyan-800">
-                    {selectedReport.caseNumber}
-                  </span>
-                  <span className={`font-mono text-[11px] uppercase font-semibold px-2 py-0.5 rounded ${
-                    selectedReport.status === 'approved'
-                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                      : selectedReport.status === 'pending'
-                      ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                      : selectedReport.status === 'draft'
-                      ? 'bg-cyan-950 text-cyan-300 border border-cyan-800'
-                      : 'bg-rose-950 text-rose-300 border border-rose-800'
-                  }`}>
-                    {selectedReport.status}
-                  </span>
-                </div>
+        {/* Right Sidebar: Selected Case Dossier, Plotted Pins Roster & Hotspot Zones */}
+        <div className="space-y-4">
+          {/* Sidebar Tab Navigator */}
+          <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 p-1 rounded-xl">
+            <button
+              onClick={() => setSidebarTab('dossier')}
+              className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                sidebarTab === 'dossier'
+                  ? 'bg-cyan-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Case Dossier</span>
+            </button>
 
-                <div>
-                  <h3 className="text-sm font-bold text-white mb-1">
-                    {selectedReport.title}
-                  </h3>
-                  <p className="text-slate-400 line-clamp-3 leading-relaxed">
-                    {selectedReport.description}
-                  </p>
-                </div>
+            <button
+              onClick={() => setSidebarTab('pins')}
+              className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                sidebarTab === 'pins'
+                  ? 'bg-cyan-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Plotted Pins ({activeReports.length})</span>
+            </button>
 
-                <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2 font-mono text-[11px]">
-                  <div className="text-cyan-400 font-semibold mb-1 flex items-center justify-between">
-                    <span>Geospatial Telemetry:</span>
-                    <span className="text-emerald-400 font-bold">{selectedReport.credibilityScore}% Score</span>
+            <button
+              onClick={() => setSidebarTab('hotspots')}
+              className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                sidebarTab === 'hotspots'
+                  ? 'bg-cyan-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Flame className="w-3.5 h-3.5" />
+              <span>Hotspots ({hotspotZones.length})</span>
+            </button>
+          </div>
+
+          {/* TAB 1: Selected Case Dossier Panel */}
+          {sidebarTab === 'dossier' && (
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-lg">
+              {selectedReport ? (
+                <div className="space-y-4 text-xs">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <span className="font-mono font-bold text-cyan-400 bg-cyan-950 px-2.5 py-1 rounded border border-cyan-800">
+                      {selectedReport.caseNumber}
+                    </span>
+                    <span className={`font-mono text-[11px] uppercase font-semibold px-2 py-0.5 rounded ${
+                      selectedReport.status === 'approved'
+                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                        : selectedReport.status === 'pending'
+                        ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                        : selectedReport.status === 'draft'
+                        ? 'bg-cyan-950 text-cyan-300 border border-cyan-800'
+                        : 'bg-rose-950 text-rose-300 border border-rose-800'
+                    }`}>
+                      {selectedReport.status}
+                    </span>
                   </div>
-                  <div className="text-slate-300">Location: {selectedReport.location.city}, {selectedReport.location.state}</div>
-                  <div className="text-slate-400">Proximity: {selectedReport.location.landmarkProximity}</div>
-                  <div className="text-slate-400">Coordinates: {selectedReport.location.lat}° N, {selectedReport.location.lng}° W</div>
-                  <div className="text-slate-400">Altitude: {selectedReport.classification.estimatedAltitude}</div>
-                  <div className="text-slate-400">Hynek: {selectedReport.classification.hynek} · Shape: {selectedReport.classification.shape}</div>
-                </div>
 
-                <div className="pt-2">
-                  <button
-                    onClick={() => onSelectReport(selectedReport)}
-                    className="w-full py-2 px-3 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition-colors flex items-center justify-center gap-1.5 shadow-sm"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Inspect Full Case Dossier</span>
-                  </button>
+                  <div>
+                    <h3 className="text-sm font-bold text-white mb-1">
+                      {selectedReport.title}
+                    </h3>
+                    <p className="text-slate-400 line-clamp-3 leading-relaxed">
+                      {selectedReport.description}
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2 font-mono text-[11px]">
+                    <div className="text-cyan-400 font-semibold mb-1 flex items-center justify-between">
+                      <span>Geospatial Telemetry:</span>
+                      <span className="text-emerald-400 font-bold">{selectedReport.credibilityScore}% Score</span>
+                    </div>
+                    <div className="text-slate-300">Location: {selectedReport.location.city}, {selectedReport.location.state}</div>
+                    <div className="text-slate-400">Proximity: {selectedReport.location.landmarkProximity}</div>
+                    <div className="text-slate-400">Coordinates: {selectedReport.location.lat}° N, {selectedReport.location.lng}° W</div>
+                    <div className="text-slate-400">Altitude: {selectedReport.classification.estimatedAltitude}</div>
+                    <div className="text-slate-400">Hynek: {selectedReport.classification.hynek} · Shape: {selectedReport.classification.shape}</div>
+                  </div>
+
+                  <div className="pt-2 space-y-2">
+                    <button
+                      onClick={() => onSelectReport(selectedReport)}
+                      className="w-full py-2.5 px-3 rounded-xl text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition-colors flex items-center justify-center gap-2 shadow-lg shadow-cyan-900/40"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>Launch CaseDetailModal</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </button>
+                    <p className="text-[10px] text-slate-500 text-center">
+                      Opens full intake dossier, witness debrief, field notes & evidence analysis
+                    </p>
+                  </div>
                 </div>
+              ) : (
+                <div className="py-12 text-center text-slate-500 space-y-3">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center">
+                    <MapPin className="w-6 h-6 text-cyan-400" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-slate-200 text-xs">Click Any Pin on the Radar Map</div>
+                    <p className="text-[11px] text-slate-400 max-w-xs mx-auto mt-1">
+                      Click directly on any map pin or switch to the <strong className="text-cyan-400">Plotted Pins</strong> tab to open the full <span className="font-mono text-cyan-300">CaseDetailModal</span>.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: Plotted Sighting Pins Roster */}
+          {sidebarTab === 'pins' && (
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3 shadow-lg">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-cyan-400" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                    Plotted Sighting Pins ({activeReports.length})
+                  </h3>
+                </div>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  1-Click Modal Launcher
+                </span>
               </div>
-            ) : (
-              <div className="py-10 text-center text-slate-500 space-y-2">
-                <MapPin className="w-8 h-8 mx-auto text-slate-600" />
-                <div className="font-semibold text-slate-300 text-xs">Select Any Radar Contact</div>
-                <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
-                  Click on any radar vector or thermal hotspot to review airspace cross-checking, witness statement, and credibility telemetry.
+
+              <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
+                {activeReports.map((rep) => {
+                  const isSelected = rep.id === selectedCaseId;
+                  return (
+                    <div
+                      key={rep.id}
+                      onClick={() => {
+                        setSelectedCaseId(rep.id);
+                        onSelectReport(rep);
+                      }}
+                      className={`p-3 rounded-xl border transition-all cursor-pointer group flex flex-col gap-2 ${
+                        isSelected
+                          ? 'bg-slate-950 border-cyan-500 ring-1 ring-cyan-500/40'
+                          : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-950'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-xs font-bold text-cyan-400">
+                            {rep.caseNumber}
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                            {rep.classification.hynek}
+                          </span>
+                        </div>
+                        <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-semibold ${
+                          rep.status === 'approved'
+                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                            : rep.status === 'pending'
+                            ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                            : rep.status === 'draft'
+                            ? 'bg-cyan-950 text-cyan-300 border border-cyan-800'
+                            : 'bg-rose-950 text-rose-300 border border-rose-800'
+                        }`}>
+                          {rep.status}
+                        </span>
+                      </div>
+
+                      <div className="text-xs font-semibold text-slate-100 line-clamp-1 group-hover:text-cyan-300 transition-colors">
+                        {rep.title}
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1 border-t border-slate-900">
+                        <span>📍 {rep.location.city} · Score: {rep.credibilityScore}%</span>
+                        <span className="text-cyan-400 font-semibold flex items-center gap-0.5 group-hover:underline">
+                          <span>Open Modal</span>
+                          <ArrowUpRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: Top Omaha Sighting Hotspots List */}
+          {sidebarTab === 'hotspots' && (
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3.5 shadow-lg">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Highest Density Omaha Sectors</span>
+                </h3>
+                <span className="text-[10px] font-mono text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                  5 Active Sectors
+                </span>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                {hotspotZones.map(zone => {
+                  const isFocused = focusedHotspotId === zone.id;
+                  let badgeStyle = 'bg-slate-800 text-slate-300 border-slate-700';
+                  if (zone.densityLevel === 'Critical') badgeStyle = 'bg-rose-950 text-rose-300 border-rose-800 font-bold';
+                  if (zone.densityLevel === 'Elevated') badgeStyle = 'bg-amber-950 text-amber-300 border-amber-800 font-bold';
+                  if (zone.densityLevel === 'Moderate') badgeStyle = 'bg-cyan-950 text-cyan-300 border-cyan-800';
+
+                  return (
+                    <div
+                      key={zone.id}
+                      onClick={() => setFocusedHotspotId(isFocused ? null : zone.id)}
+                      className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                        isFocused 
+                          ? 'bg-slate-950 border-rose-500/80 ring-1 ring-rose-500/30' 
+                          : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-950'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-semibold text-slate-100 flex items-center gap-1.5">
+                          <Target className={`w-3.5 h-3.5 ${isFocused ? 'text-rose-400' : 'text-slate-500'}`} />
+                          <span>{zone.name}</span>
+                        </div>
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${badgeStyle}`}>
+                          {zone.densityLevel} ({zone.densityScore}%)
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-slate-400 mt-1 line-clamp-1">
+                        {zone.subname}
+                      </p>
+
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-900 text-[10px] text-slate-500 font-mono">
+                        <span>Proximity: {zone.proximityNote}</span>
+                        <span className="text-cyan-400 font-bold">
+                          {isFocused ? 'FOCUS ACTIVE' : 'CLICK TO TARGET'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80 text-[11px] text-slate-400 flex items-start gap-2">
+                <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                <p>
+                  Hotspots correlate proximity to military installations with prevailing flight corridors, highlighting anomalous electromagnetic and altitude distributions.
                 </p>
               </div>
-            )}
-          </div>
-
-          {/* Top Omaha Sighting Hotspots List */}
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3.5 shadow-lg">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
-                <Flame className="w-3.5 h-3.5 text-rose-400" />
-                <span>Highest Density Omaha Sectors</span>
-              </h3>
-              <span className="text-[10px] font-mono text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                5 Active Sectors
-              </span>
             </div>
-
-            <div className="space-y-2 text-xs">
-              {hotspotZones.map(zone => {
-                const isFocused = focusedHotspotId === zone.id;
-                let badgeStyle = 'bg-slate-800 text-slate-300 border-slate-700';
-                if (zone.densityLevel === 'Critical') badgeStyle = 'bg-rose-950 text-rose-300 border-rose-800 font-bold';
-                if (zone.densityLevel === 'Elevated') badgeStyle = 'bg-amber-950 text-amber-300 border-amber-800 font-bold';
-                if (zone.densityLevel === 'Moderate') badgeStyle = 'bg-cyan-950 text-cyan-300 border-cyan-800';
-
-                return (
-                  <div
-                    key={zone.id}
-                    onClick={() => setFocusedHotspotId(isFocused ? null : zone.id)}
-                    className={`p-3 rounded-xl border transition-all cursor-pointer ${
-                      isFocused 
-                        ? 'bg-slate-950 border-rose-500/80 ring-1 ring-rose-500/30' 
-                        : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-950'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="font-semibold text-slate-100 flex items-center gap-1.5">
-                        <Target className={`w-3.5 h-3.5 ${isFocused ? 'text-rose-400' : 'text-slate-500'}`} />
-                        <span>{zone.name}</span>
-                      </div>
-                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${badgeStyle}`}>
-                        {zone.densityLevel} ({zone.densityScore}%)
-                      </span>
-                    </div>
-
-                    <p className="text-[11px] text-slate-400 mt-1 line-clamp-1">
-                      {zone.subname}
-                    </p>
-
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-900 text-[10px] text-slate-500 font-mono">
-                      <span>Proximity: {zone.proximityNote}</span>
-                      <span className="text-cyan-400 font-bold">
-                        {isFocused ? 'FOCUS ACTIVE' : 'CLICK TO TARGET'}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80 text-[11px] text-slate-400 flex items-start gap-2">
-              <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-              <p>
-                Hotspots correlate proximity to military installations with prevailing flight corridors, highlighting anomalous electromagnetic and altitude distributions.
-              </p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
