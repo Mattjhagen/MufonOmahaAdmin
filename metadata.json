@@ -1,0 +1,6 @@
+{
+  "name": "Omaha MUFON Admin & Codex Studio",
+  "description": "Field investigation triage, sighting report moderation, witness redaction, and Codex system prompt generator for Omaha MUFON (admin.mufonomaha.space).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
