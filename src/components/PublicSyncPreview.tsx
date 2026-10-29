@@ -4,7 +4,6 @@ import {
   ExternalLink, Copy, Check, Plus, Trash2, Edit3
 } from 'lucide-react';
 import { SightingReport, PublicAnnouncement } from '../types';
-import { INITIAL_ANNOUNCEMENTS } from '../data/mockData';
 
 interface PublicSyncPreviewProps {
   reports: SightingReport[];
@@ -13,7 +12,7 @@ interface PublicSyncPreviewProps {
 export const PublicSyncPreview: React.FC<PublicSyncPreviewProps> = ({
   reports
 }) => {
-  const [announcements, setAnnouncements] = useState<PublicAnnouncement[]>(INITIAL_ANNOUNCEMENTS);
+  const [announcements, setAnnouncements] = useState<PublicAnnouncement[]>([]);
   const [copiedApi, setCopiedApi] = useState(false);
   const [activeTab, setActiveTab] = useState<'sightings' | 'announcements' | 'api_schema'>('sightings');
 
@@ -88,7 +87,7 @@ export const PublicSyncPreview: React.FC<PublicSyncPreviewProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 text-xs">
+      <div className="max-w-full overflow-x-auto flex items-center gap-2 [&>button]:shrink-0 [&>button]:whitespace-nowrap border-b border-slate-800 text-xs">
         <button
           onClick={() => setActiveTab('sightings')}
           className={`py-2.5 px-4 font-medium border-b-2 transition-colors flex items-center gap-2 ${

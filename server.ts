@@ -1,4 +1,5 @@
 import express from 'express';
+import { notifications } from './notifications';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -13,6 +14,16 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '10mb' }));
+
+// The origin is loopback-only and receives identity headers from Cloudflare Access.
+app.get('/api/session', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const email = req.header('Cf-Access-Authenticated-User-Email');
+  if (!email) return res.status(401).json({ error: 'Cloudflare Access login required' });
+  res.json({ email });
+});
+
+app.use('/api/notifications', notifications);
 
 // Lazy initialize Gemini client if key is present
 const getGenAI = () => {
@@ -171,11 +182,7 @@ app.post('/api/codex-simulation', async (req, res) => {
     const ai = getGenAI();
 
     if (!ai) {
-      return res.json({
-        success: true,
-        source: 'simulated',
-        simulatedOutput: `// Simulated Codex output for ${targetStack || 'Next.js App Router'}\n// Connects admin.mufonomaha.space to mufonomaha.space database\n\n// 1. src/middleware.ts - Subdomain Router\nexport function middleware(req: NextRequest) {\n  const hostname = req.headers.get('host') || '';\n  if (hostname.startsWith('admin.')) {\n    return NextResponse.rewrite(new URL('/admin' + req.nextUrl.pathname, req.url));\n  }\n  return NextResponse.next();\n}\n\n// 2. Database schema ready for moderation triage queue.`
-      });
+      return res.status(503).json({ success: false, error: 'AI generation is unavailable. Configure GEMINI_API_KEY.' });
     }
 
     try {
@@ -203,67 +210,7 @@ Keep it clean, high quality TypeScript.`
       console.warn('Codex simulation model call failed, falling back:', e?.message);
     }
 
-    return res.json({
-      success: true,
-      source: 'simulated-engine',
-      simulatedOutput: `// Omaha MUFON Admin Backend - Implementation Blueprint for ${targetStack || 'Next.js 15'}
-// Repository: Mattjhagen/OmahaMufonRevised | Subdomain: admin.mufonomaha.space
-
-// 1. SUBDOMAIN ROUTING (src/middleware.ts)
-import { NextResponse, type NextRequest } from 'next/server';
-
-export function middleware(req: NextRequest) {
-  const hostname = req.headers.get('host') || '';
-  const url = req.nextUrl.clone();
-  
-  // Rewrites admin.mufonomaha.space to /admin application route group
-  if (hostname.startsWith('admin.')) {
-    url.pathname = \`/admin\${url.pathname}\`;
-    return NextResponse.rewrite(url);
-  }
-  return NextResponse.next();
-}
-
-// 2. MODERATION & PII REDACTION ENDPOINT (src/app/api/admin/reports/[id]/route.ts)
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const { status, rejectionReason, moderationNotes } = await req.json();
-  
-  const updated = await prisma.sightingReport.update({
-    where: { id: params.id },
-    data: {
-      status,
-      rejectionReason,
-      moderationNotes,
-      isPublishedToPublic: status === 'APPROVED',
-      updatedAt: new Date()
-    }
-  });
-
-  return Response.json({ success: true, report: updated });
-}
-
-// 3. PUBLIC SYNDICATED ENDPOINT (src/app/api/public/sightings/route.ts)
-export async function GET() {
-  const publicCases = await prisma.sightingReport.findMany({
-    where: { status: 'APPROVED', isPublishedToPublic: true },
-    select: {
-      caseNumber: true,
-      title: true,
-      description: true,
-      date: true,
-      timeString: true,
-      location: true,
-      redactedName: true, // Legal witness PII omitted
-      hynekCategory: true,
-      shape: true,
-      credibilityScore: true,
-      media: true
-    }
-  });
-
-  return Response.json(publicCases);
-}`
-    });
+    return res.status(502).json({ success: false, error: 'AI generation failed. Please try again.' });
   } catch (error: any) {
     console.error('Codex simulation error:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -280,13 +227,17 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
+    app.get('/sw.js', (_req, res) => {
+      res.setHeader('Cache-Control', 'no-cache');
+      res.sendFile(path.resolve(__dirname, 'dist/sw.js'));
+    });
     app.use(express.static(path.resolve(__dirname, 'dist')));
     app.get('*', (_req, res) => {
       res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
     });
   }
 
-  app.listen(port, () => {
+  app.listen(Number(port), process.env.HOST || '127.0.0.1', () => {
     console.log(`Omaha MUFON Admin Server running on port ${port}`);
   });
 }

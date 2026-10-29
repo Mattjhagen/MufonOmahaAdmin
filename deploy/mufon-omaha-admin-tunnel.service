@@ -1,0 +1,14 @@
+[Unit]
+Description=Cloudflare Tunnel for Omaha MUFON Admin
+After=network-online.target mufon-omaha-admin.service
+Wants=network-online.target mufon-omaha-admin.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cloudflared --no-autoupdate tunnel --config /home/matt/MufonOmahaAdmin/deploy/cloudflared.yml run mufon-omaha-admin
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

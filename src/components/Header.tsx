@@ -8,8 +8,6 @@ interface HeaderProps {
   pendingCount: number;
   currentUser: UserAccount;
   onOpenNewReport: () => void;
-  onSwitchUser: (userId: string) => void;
-  allUsers: UserAccount[];
   auditLogsCount?: number;
 }
 
@@ -19,15 +17,13 @@ export const Header: React.FC<HeaderProps> = ({
   pendingCount,
   currentUser,
   onOpenNewReport,
-  onSwitchUser,
-  allUsers,
   auditLogsCount
 }) => {
   return (
-    <header className="border-b border-slate-800 bg-slate-950/90 backdrop-blur sticky top-0 z-40">
+    <header className="min-w-0 max-w-full border-b border-slate-800 bg-slate-950/90 backdrop-blur sticky top-0 z-40">
       {/* Top System Status Banner */}
       <div className="bg-slate-900/80 px-4 py-1.5 border-b border-slate-800/80 text-xs flex flex-wrap items-center justify-between gap-3 text-slate-400">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
           <span className="font-mono text-cyan-400 font-semibold">admin.mufonomaha.space</span>
           <span className="text-slate-600">|</span>
@@ -39,7 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-4 text-slate-400">
           <div className="flex items-center gap-1.5">
             <Radio className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="text-slate-300">Offutt AFB Airspace Correlated</span>
+            <span className="text-slate-300">Local workspace</span>
           </div>
           <a
             href="https://mufonomaha.space"
@@ -55,13 +51,13 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Main Nav Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+        <div className="min-w-0 max-w-full flex flex-wrap items-center gap-3">
           <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-950 to-slate-900 border border-cyan-800/50 text-cyan-400">
             <Shield className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
+              <h1 className="text-base font-bold tracking-tight text-white flex flex-wrap items-center gap-2">
                 Omaha MUFON
                 <span className="text-xs font-normal font-mono px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60">
                   ADMIN BACKEND
@@ -75,10 +71,11 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <nav className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800 text-xs">
+        <nav aria-label="Admin sections" className="admin-navigation min-w-0 max-w-full overflow-x-auto flex items-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800 text-xs">
           <button
             onClick={() => setCurrentTab('reports')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-colors ${
+            aria-current={currentTab === 'reports' ? 'page' : undefined}
+            className={`shrink-0 whitespace-nowrap flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-colors ${
               currentTab === 'reports'
                 ? 'bg-cyan-950 text-cyan-300 border border-cyan-800/60 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
@@ -95,7 +92,8 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => setCurrentTab('users')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-colors ${
+            aria-current={currentTab === 'users' ? 'page' : undefined}
+            className={`shrink-0 whitespace-nowrap flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-colors ${
               currentTab === 'users'
                 ? 'bg-cyan-950 text-cyan-300 border border-cyan-800/60 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
@@ -107,7 +105,8 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => setCurrentTab('codex')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-colors ${
+            aria-current={currentTab === 'codex' ? 'page' : undefined}
+            className={`shrink-0 whitespace-nowrap flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-colors ${
               currentTab === 'codex'
                 ? 'bg-cyan-950 text-cyan-300 border border-cyan-800/60 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
@@ -120,7 +119,8 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => setCurrentTab('radar')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-colors ${
+            aria-current={currentTab === 'radar' ? 'page' : undefined}
+            className={`shrink-0 whitespace-nowrap flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-colors ${
               currentTab === 'radar'
                 ? 'bg-cyan-950 text-cyan-300 border border-cyan-800/60 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
@@ -132,7 +132,8 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => setCurrentTab('public_sync')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-colors ${
+            aria-current={currentTab === 'public_sync' ? 'page' : undefined}
+            className={`shrink-0 whitespace-nowrap flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-colors ${
               currentTab === 'public_sync'
                 ? 'bg-cyan-950 text-cyan-300 border border-cyan-800/60 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
@@ -144,7 +145,8 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => setCurrentTab('audit')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-colors ${
+            aria-current={currentTab === 'audit' ? 'page' : undefined}
+            className={`shrink-0 whitespace-nowrap flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-colors ${
               currentTab === 'audit'
                 ? 'bg-cyan-950 text-cyan-300 border border-cyan-800/60 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
@@ -156,7 +158,7 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* Right Action: Intake & User Profile */}
-        <div className="flex items-center gap-3">
+        <div className="min-w-0 max-w-full flex flex-wrap items-center gap-3">
           <button
             onClick={onOpenNewReport}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white shadow-sm transition-colors"
@@ -179,18 +181,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            <select
-              value={currentUser.id}
-              onChange={(e) => onSwitchUser(e.target.value)}
-              title="Switch user account for testing permissions"
-              className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-300 focus:outline-none focus:border-cyan-500 cursor-pointer"
-            >
-              {allUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name} ({u.role.replace('_', ' ')})
-                </option>
-              ))}
-            </select>
+            <a href="/cdn-cgi/access/logout" className="text-slate-400 hover:text-white">Sign out</a>
           </div>
         </div>
       </div>

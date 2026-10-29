@@ -227,6 +227,8 @@ Provide clean, modular, production-ready code with complete TypeScript interface
       const data = await res.json();
       if (data.success) {
         setSimulationResult(data.simulatedOutput);
+      } else {
+        setSimulationResult(data.error || 'AI generation unavailable.');
       }
     } catch (e) {
       console.error(e);

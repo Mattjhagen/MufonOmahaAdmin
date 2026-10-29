@@ -39,10 +39,10 @@ export const NewReportModal: React.FC<NewReportModalProps> = ({
   // Classification
   const [hynek, setHynek] = useState<HynekScale>('NL');
   const [shape, setShape] = useState<ObjectShape>('Disc');
-  const [color, setColor] = useState('Bright White / Amber');
-  const [duration, setDuration] = useState('3 minutes');
-  const [estimatedAltitude, setEstimatedAltitude] = useState('1,200 ft AGL');
-  const [sound, setSound] = useState('Completely silent');
+  const [color, setColor] = useState('');
+  const [duration, setDuration] = useState('');
+  const [estimatedAltitude, setEstimatedAltitude] = useState('');
+  const [sound, setSound] = useState('');
   
   // Status
   const [status, setStatus] = useState<ReportStatus>('pending');
@@ -77,7 +77,7 @@ export const NewReportModal: React.FC<NewReportModalProps> = ({
       },
       witness: {
         name: witnessName.trim() || 'Confidential Witness (Incomplete)',
-        email: witnessEmail.trim() || 'unlisted@mufon.org',
+        email: witnessEmail.trim() || '',
         phone: witnessPhone.trim() || '(402) 555-0000',
         occupation: witnessOccupation.trim() || undefined,
         isAnonymous,
@@ -149,7 +149,7 @@ export const NewReportModal: React.FC<NewReportModalProps> = ({
       },
       witness: {
         name: witnessName.trim() || 'Anonymous Witness',
-        email: witnessEmail.trim() || 'unlisted@mufon.org',
+        email: witnessEmail.trim() || '',
         phone: witnessPhone.trim() || '(402) 555-0000',
         occupation: witnessOccupation.trim() || undefined,
         isAnonymous,

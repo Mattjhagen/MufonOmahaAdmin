@@ -207,7 +207,7 @@ export const AuditLog: React.FC<AuditLogProps> = ({ logs, onSelectCaseNumber }) 
       {/* Filter and Search Bar */}
       <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-xl flex flex-wrap items-center justify-between gap-4">
         {/* Search */}
-        <div className="relative min-w-[240px] max-w-sm flex-1">
+        <div className="relative min-w-0 w-full sm:min-w-[240px] max-w-sm flex-1">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"

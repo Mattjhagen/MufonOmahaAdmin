@@ -1,0 +1,19 @@
+[Unit]
+Description=Omaha MUFON Admin website
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/matt/MufonOmahaAdmin
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=3015
+Environment=APP_URL=https://admin.mufonomaha.space
+ExecStart=/usr/bin/node /home/matt/MufonOmahaAdmin/node_modules/tsx/dist/cli.mjs server.ts
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+UMask=0077
+
+[Install]
+WantedBy=default.target

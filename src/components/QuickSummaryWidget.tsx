@@ -37,7 +37,7 @@ export const QuickSummaryWidget: React.FC<QuickSummaryWidgetProps> = ({
         avgDays: 0,
         avgApprovalHours: 0,
         avgRejectionHours: 0,
-        withinSlaPercent: 100,
+        withinSlaPercent: 0,
         fastestCase: null as { report: SightingReport; hours: number } | null,
         slowestCase: null as { report: SightingReport; hours: number } | null,
         casesList: [] as Array<{ report: SightingReport; hours: number; days: number }>

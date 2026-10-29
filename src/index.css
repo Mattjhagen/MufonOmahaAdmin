@@ -1,1 +1,27 @@
 @import "tailwindcss";
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body, #root { width: 100%; min-width: 0; }
+  body { margin: 0; background: #020617; }
+  /* Let nested panels shrink below their content's intrinsic width. Wide
+     tables and code retain their own overflow-x-auto scroll boundaries. */
+  #root :where(div, section, main, header, footer, nav, form) { min-width: 0; }
+  #root :where(img, video, iframe, canvas) { max-width: 100%; }
+  #root :where(input, select, textarea) { max-width: 100%; }
+}
+
+.admin-navigation {
+  scrollbar-width: thin;
+  scrollbar-color: #475569 #0f172a;
+  scroll-padding-inline: 0.5rem;
+}
+
+@media (max-width: 639px) {
+  /* Toolbars and card headings must retain every control at narrow widths. */
+  #root :where(main, [class*="fixed"]) :where(.flex:not(.flex-col)) {
+    flex-wrap: wrap;
+  }
+  #root :where(main, footer) { overflow-wrap: anywhere; }
+  #root :where(main) .grid > * { max-width: 100%; }
+}

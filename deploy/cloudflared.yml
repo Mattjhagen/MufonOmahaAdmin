@@ -1,0 +1,6 @@
+tunnel: 7b8d9f5c-47cb-48ed-bad5-6f8dcd8cd290
+credentials-file: /home/matt/.cloudflared/7b8d9f5c-47cb-48ed-bad5-6f8dcd8cd290.json
+ingress:
+  - hostname: admin.mufonomaha.space
+    service: http://127.0.0.1:3015
+  - service: http_status:404

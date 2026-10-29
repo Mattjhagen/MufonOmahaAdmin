@@ -101,7 +101,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       email: newUserEmail.trim(),
       role: newUserRole,
       status: 'active',
-      badgeNumber: newUserBadge.trim() || (newUserRole === 'field_investigator' ? `NE-0${Math.floor(Math.random() * 80 + 20)}` : undefined),
+      badgeNumber: newUserBadge.trim() || undefined,
       phone: newUserPhone.trim() || undefined,
       assignedCasesCount: 0,
       dateJoined: new Date().toISOString().substring(0, 10),
@@ -158,7 +158,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       {/* Filter and Search Bar */}
       <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-xl flex flex-wrap items-center justify-between gap-4">
         {/* Search */}
-        <div className="relative min-w-[240px] max-w-sm flex-1">
+        <div className="relative min-w-0 w-full sm:min-w-[240px] max-w-sm flex-1">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"

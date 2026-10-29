@@ -62,7 +62,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
     if (!newNoteText.trim()) return;
     const newNote: FieldNote = {
       id: `fn-${Date.now()}`,
-      author: userRole === 'admin' ? 'Matt Hagen (Admin)' : 'Field Investigator',
+      author: userRole.replace('_', ' '),
       timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
       note: newNoteText.trim(),
       type: newNoteType

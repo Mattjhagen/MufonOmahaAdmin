@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { PwaControls } from './components/PwaControls';
 import { Header } from './components/Header';
 import { SightingQueue } from './components/SightingQueue';
 import { UserManagement } from './components/UserManagement';
@@ -9,7 +10,7 @@ import { OmahaRadarMap } from './components/OmahaRadarMap';
 import { PublicSyncPreview } from './components/PublicSyncPreview';
 import { AuditLog } from './components/AuditLog';
 import { SightingReport, UserAccount, UserRole, RejectionReason, AuditLogEntry, AuditActionType, AuditSeverity } from './types';
-import { INITIAL_REPORTS, INITIAL_USERS, INITIAL_AUDIT_LOGS } from './data/mockData';
+import { loadStoredRecords } from './data/storage';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 export default function App() {
@@ -17,46 +18,25 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<'reports' | 'users' | 'codex' | 'radar' | 'public_sync' | 'audit'>('reports');
 
   // Reports State with LocalStorage persistence
-  const [reports, setReports] = useState<SightingReport[]>(() => {
-    const saved = localStorage.getItem('omaha_mufon_reports');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return INITIAL_REPORTS;
-  });
+  const [reports, setReports] = useState<SightingReport[]>(() => loadStoredRecords<SightingReport>('omaha_mufon_reports'));
 
   // Users State with LocalStorage persistence
-  const [users, setUsers] = useState<UserAccount[]>(() => {
-    const saved = localStorage.getItem('omaha_mufon_users');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return INITIAL_USERS;
-  });
+  const [users, setUsers] = useState<UserAccount[]>(() => loadStoredRecords<UserAccount>('omaha_mufon_users'));
 
   // Audit Logs State with LocalStorage persistence
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => {
-    const saved = localStorage.getItem('omaha_mufon_audit_logs');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return INITIAL_AUDIT_LOGS;
-  });
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => loadStoredRecords<AuditLogEntry>('omaha_mufon_audit_logs'));
 
-  // Active Authenticated User (Defaults to Matt Hagen - Admin)
-  const [currentUserId, setCurrentUserId] = useState<string>('usr-001');
+  const [currentUser, setCurrentUser] = useState<UserAccount>({
+    id: '', name: 'Cloudflare Access', email: '', role: 'admin',
+    status: 'active', assignedCasesCount: 0, dateJoined: '', lastLogin: ''
+  });
+  useEffect(() => {
+    fetch('/api/session').then(response => {
+      if (!response.ok) throw new Error('Access identity unavailable');
+      return response.json();
+    }).then(({ email }) => setCurrentUser(user => ({ ...user, id: email, name: email, email })))
+      .catch(error => console.error(error));
+  }, []);
 
   // Modals
   const [selectedReport, setSelectedReport] = useState<SightingReport | null>(null);
@@ -88,7 +68,7 @@ export default function App() {
     localStorage.setItem('omaha_mufon_audit_logs', JSON.stringify(auditLogs));
   }, [auditLogs]);
 
-  const currentUser = users.find(u => u.id === currentUserId) || users[0];
+
 
   // Helper to record administrative actions into immutable audit trail
   const logAuditEvent = (
@@ -244,6 +224,9 @@ export default function App() {
 
   const handleAddNewReport = (newReport: SightingReport) => {
     setReports(prev => [newReport, ...prev]);
+    if (newReport.status !== 'draft') {
+      fetch('/api/notifications/report', { method: 'POST' }).catch(error => console.error('Notification delivery failed', error));
+    }
 
     logAuditEvent(
       'CREATE_REPORT',
@@ -342,7 +325,7 @@ export default function App() {
   const pendingReportsCount = reports.filter(r => r.status === 'pending').length;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-900 selection:text-cyan-200">
+    <div className="min-h-screen min-w-0 w-full max-w-full bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-900 selection:text-cyan-200">
       {/* Global Header */}
       <Header
         currentTab={currentTab}
@@ -350,17 +333,13 @@ export default function App() {
         pendingCount={pendingReportsCount}
         currentUser={currentUser}
         onOpenNewReport={() => setIsNewReportOpen(true)}
-        onSwitchUser={(id) => {
-          setCurrentUserId(id);
-          const u = users.find(x => x.id === id);
-          showToast(`Switched active user to ${u?.name} (${u?.role})`, 'info');
-        }}
-        allUsers={users}
         auditLogsCount={auditLogs.length}
       />
 
+      <PwaControls />
+
       {/* Main Body Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 min-w-0 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {currentTab === 'reports' && (
           <SightingQueue
             reports={reports}
@@ -412,13 +391,13 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-slate-900 bg-slate-950/80 py-4 px-4 sm:px-6 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-slate-400">admin.mufonomaha.space</span>
             <span>·</span>
             <span>Mutual UFO Network (MUFON) Nebraska Chapter #NE-008</span>
           </div>
 
-          <div className="flex items-center gap-4 text-slate-400">
+          <div className="min-w-0 flex flex-wrap items-center gap-4 text-slate-400">
             <span>Repo: <a href="https://github.com/Mattjhagen/OmahaMufonRevised" target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">Mattjhagen/OmahaMufonRevised</a></span>
             <span>·</span>
             <span>Public Site: <a href="https://mufonomaha.space" target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">mufonomaha.space</a></span>
@@ -450,7 +429,7 @@ export default function App() {
 
       {/* Global Toast */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs shadow-2xl animate-in fade-in slide-in-from-bottom-2">
+        <div className="fixed bottom-5 right-5 max-w-[calc(100%-2.5rem)] z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs shadow-2xl animate-in fade-in slide-in-from-bottom-2">
           {toastMessage.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
           {toastMessage.type === 'info' && <Info className="w-4 h-4 text-cyan-400 shrink-0" />}
           {toastMessage.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />}

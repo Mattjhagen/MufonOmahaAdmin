@@ -126,7 +126,7 @@ export const SightingQueue: React.FC<SightingQueueProps> = ({
             <Search className="w-4 h-4 absolute left-3.5 text-cyan-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search reports by title or case number (e.g. 'Chevron', 'NE-2026-0419', 'Tic-Tac')..."
+              placeholder="Search reports by title or case number..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl pl-10 pr-28 py-2.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-colors shadow-inner"
@@ -239,12 +239,6 @@ export const SightingQueue: React.FC<SightingQueueProps> = ({
 
             <span className="text-slate-600">|</span>
             <span className="text-slate-500 hidden xl:inline">Quick Find:</span>
-            <button
-              onClick={() => setSearchQuery('NE-2026-0419')}
-              className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 hover:text-cyan-300 hover:border-cyan-800 transition-colors font-mono"
-            >
-              NE-2026-0419
-            </button>
             <button
               onClick={() => setSearchQuery('Tic-Tac')}
               className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 hover:text-cyan-300 hover:border-cyan-800 transition-colors"

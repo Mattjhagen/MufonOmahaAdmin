@@ -16,7 +16,7 @@ export const ReportsAnalyticsCard: React.FC<ReportsAnalyticsCardProps> = ({ repo
 
   // Generate 30-day timeline buckets (last 30 days ending at current date Oct 29, 2026)
   const timelineData = useMemo(() => {
-    const today = new Date('2026-10-29');
+    const today = new Date();
     const days: { [dateStr: string]: { date: string; displayDate: string; pending: number; approved: number; rejected: number; total: number } } = {};
 
     // Initialize 30 days
@@ -45,28 +45,7 @@ export const ReportsAnalyticsCard: React.FC<ReportsAnalyticsCardProps> = ({ repo
       }
     });
 
-    // To make the 30-day chart look like an active chapter with historical trend lines,
-    // ensure realistic historical data points for days without direct manual cases
-    const result = Object.values(days);
-    
-    // Seed subtle baseline data for historical days to illustrate chapter cadence
-    const sampleSeedIndices = [2, 5, 8, 12, 17, 21, 26];
-    sampleSeedIndices.forEach((idx, i) => {
-      if (result[idx] && result[idx].total === 0) {
-        if (i % 3 === 0) {
-          result[idx].approved = 1;
-          result[idx].total = 1;
-        } else if (i % 3 === 1) {
-          result[idx].rejected = 1;
-          result[idx].total = 1;
-        } else {
-          result[idx].pending = 1;
-          result[idx].total = 1;
-        }
-      }
-    });
-
-    return result;
+    return Object.values(days);
   }, [reports]);
 
   // Status Distribution data for Donut Chart

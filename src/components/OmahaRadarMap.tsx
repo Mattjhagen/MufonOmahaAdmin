@@ -76,10 +76,10 @@ export const OmahaRadarMap: React.FC<OmahaRadarMapProps> = ({
         centerLat: 41.115,
         centerLng: -95.925,
         radiusKm: 6.5,
-        densityLevel: 'Critical',
-        densityScore: 96,
+        densityLevel: 'Emerging',
+        densityScore: 0,
         casesCount: 0,
-        description: 'Persistent high-altitude and close-encounter clusters along the South Omaha/Bellevue military airspace boundary.',
+        description: 'Regional grouping of recorded sightings within this map area.',
         proximityNote: '1.4 - 3.8 miles from active Offutt AFB controlled perimeter'
       },
       {
@@ -89,10 +89,10 @@ export const OmahaRadarMap: React.FC<OmahaRadarMapProps> = ({
         centerLat: 41.260,
         centerLng: -95.920,
         radiusKm: 5.0,
-        densityLevel: 'Elevated',
-        densityScore: 82,
+        densityLevel: 'Emerging',
+        densityScore: 0,
         casesCount: 0,
-        description: 'Maneuvering luminous orbs and daylight cylinders recorded over Gene Leahy Mall, Bob Kerrey Bridge, and Council Bluffs bluffs.',
+        description: 'Regional grouping of recorded sightings within this map area.',
         proximityNote: 'Class C Eppley radar corridor (0-5,000 ft MSL)'
       },
       {
@@ -102,10 +102,10 @@ export const OmahaRadarMap: React.FC<OmahaRadarMapProps> = ({
         centerLat: 41.152,
         centerLng: -96.095,
         radiusKm: 7.0,
-        densityLevel: 'Elevated',
-        densityScore: 78,
+        densityLevel: 'Emerging',
+        densityScore: 0,
         casesCount: 0,
-        description: 'Frequent suburban nocturnal lights and low-altitude formations crossing Wehrspann Lake and Shadow Lake.',
+        description: 'Regional grouping of recorded sightings within this map area.',
         proximityNote: 'Low ambient light index, high visibility ridge'
       },
       {
@@ -115,10 +115,10 @@ export const OmahaRadarMap: React.FC<OmahaRadarMapProps> = ({
         centerLat: 41.320,
         centerLng: -96.121,
         radiusKm: 5.5,
-        densityLevel: 'Moderate',
-        densityScore: 68,
+        densityLevel: 'Emerging',
+        densityScore: 0,
         casesCount: 0,
-        description: 'Stationary daylight disc/tic-tac hover events and high-velocity vertical climbs.',
+        description: 'Regional grouping of recorded sightings within this map area.',
         proximityNote: 'Adjacent to rural Washington County agricultural corridor'
       },
       {
@@ -128,11 +128,11 @@ export const OmahaRadarMap: React.FC<OmahaRadarMapProps> = ({
         centerLat: 41.018,
         centerLng: -96.220,
         radiusKm: 8.0,
-        densityLevel: 'Moderate',
-        densityScore: 64,
+        densityLevel: 'Emerging',
+        densityScore: 0,
         casesCount: 0,
-        description: 'Low-frequency hums and large triangular craft navigating tree-top level river topography.',
-        proximityNote: 'Electromagnetic static reports along Hwy 66'
+        description: 'Regional grouping of recorded sightings within this map area.',
+        proximityNote: 'Highway 66 corridor'
       }
     ];
 
@@ -144,9 +144,11 @@ export const OmahaRadarMap: React.FC<OmahaRadarMapProps> = ({
         return dLat < 0.08 && dLng < 0.12;
       }).length;
       zone.casesCount = count;
+      zone.densityScore = activeReports.length ? Math.round(count / activeReports.length * 100) : 0;
+      zone.densityLevel = count >= 10 ? 'Critical' : count >= 5 ? 'Elevated' : count >= 2 ? 'Moderate' : 'Emerging';
     });
 
-    return zones;
+    return zones.filter(zone => zone.casesCount > 0);
   }, [activeReports]);
 
   // Selected report object
@@ -160,135 +162,141 @@ export const OmahaRadarMap: React.FC<OmahaRadarMapProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Synchronize canvas resolution with display size
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
-    if (canvas.width !== width || canvas.height !== height) {
-      canvas.width = width;
-      canvas.height = height;
-    }
-
-    ctx.clearRect(0, 0, width, height);
-
-    // Heat radius mapping
-    let radius = 55;
-    if (heatMapRadius === 'compact') radius = 38;
-    if (heatMapRadius === 'wide') radius = 75;
-
-    // Intensity alpha multiplier
-    let intensityMultiplier = 1.0;
-    if (heatMapIntensity === 'standard') intensityMultiplier = 0.75;
-    if (heatMapIntensity === 'ultra') intensityMultiplier = 1.35;
-
-    // Step 1: Create an offscreen canvas to accumulate density as grayscale alpha
-    const offscreen = document.createElement('canvas');
-    offscreen.width = width;
-    offscreen.height = height;
-    const offCtx = offscreen.getContext('2d');
-    if (!offCtx) return;
-
-    // Plot each active sighting as a radial Gaussian density blob
-    activeReports.forEach(rep => {
-      const coords = toMapCoords(rep.location.lat, rep.location.lng);
-      const px = (coords.x / 100) * width;
-      const py = (coords.y / 100) * height;
-
-      // Bonus weight for high-credibility sightings or close encounters
-      let weight = 1.0;
-      if (rep.classification.hynek.startsWith('CE-')) weight = 1.3;
-      if (rep.credibilityScore > 90) weight += 0.2;
-
-      const radGrad = offCtx.createRadialGradient(px, py, 2, px, py, radius);
-      radGrad.addColorStop(0, `rgba(0, 0, 0, ${Math.min(1.0, 0.45 * weight * intensityMultiplier)})`);
-      radGrad.addColorStop(0.35, `rgba(0, 0, 0, ${Math.min(1.0, 0.28 * weight * intensityMultiplier)})`);
-      radGrad.addColorStop(0.7, `rgba(0, 0, 0, ${Math.min(1.0, 0.12 * weight * intensityMultiplier)})`);
-      radGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-      offCtx.fillStyle = radGrad;
-      offCtx.beginPath();
-      offCtx.arc(px, py, radius, 0, Math.PI * 2);
-      offCtx.fill();
-    });
-
-    // Also plot subtle background ambient density for established Omaha corridors
-    // to reflect historical MUFON sighting archives
-    hotspotZones.forEach(zone => {
-      const coords = toMapCoords(zone.centerLat, zone.centerLng);
-      const px = (coords.x / 100) * width;
-      const py = (coords.y / 100) * height;
-      const ambientRadius = radius * 1.25;
-
-      const radGrad = offCtx.createRadialGradient(px, py, 0, px, py, ambientRadius);
-      radGrad.addColorStop(0, `rgba(0, 0, 0, ${0.18 * intensityMultiplier})`);
-      radGrad.addColorStop(0.5, `rgba(0, 0, 0, ${0.08 * intensityMultiplier})`);
-      radGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-      offCtx.fillStyle = radGrad;
-      offCtx.beginPath();
-      offCtx.arc(px, py, ambientRadius, 0, Math.PI * 2);
-      offCtx.fill();
-    });
-
-    // Step 2: Color-map the accumulated density to thermal radar palette
-    const imgData = offCtx.getImageData(0, 0, width, height);
-    const data = imgData.data;
-
-    // Palette Lookup: 0 to 255 alpha -> [r, g, b, alpha]
-    // Spectral progression:
-    // Low: Deep Cyan / Teal -> Mid: Emerald / Yellow -> High: Radiant Orange / Crimson -> Ultra: Pure Hot White
-    const outImg = ctx.createImageData(width, height);
-    const outData = outImg.data;
-
-    for (let i = 0; i < data.length; i += 4) {
-      const alpha = data[i + 3];
-      if (alpha > 0) {
-        let r = 0, g = 0, b = 0, a = alpha;
-
-        if (alpha < 45) {
-          // Deep Navy / Cyan boundary
-          const t = alpha / 45;
-          r = Math.floor(6 * t);
-          g = Math.floor(182 * t);
-          b = Math.floor(212 * t);
-          a = Math.floor(alpha * 0.9);
-        } else if (alpha < 95) {
-          // Cyan to Emerald transition
-          const t = (alpha - 45) / 50;
-          r = Math.floor(6 + (16 - 6) * t);
-          g = Math.floor(182 + (185 - 182) * t);
-          b = Math.floor(212 + (129 - 212) * t);
-          a = Math.floor(130 + 50 * t);
-        } else if (alpha < 155) {
-          // Emerald to Vibrant Amber/Yellow
-          const t = (alpha - 95) / 60;
-          r = Math.floor(16 + (245 - 16) * t);
-          g = Math.floor(185 + (158 - 185) * t);
-          b = Math.floor(129 + (11 - 129) * t);
-          a = Math.floor(180 + 35 * t);
-        } else if (alpha < 215) {
-          // Amber to Searing Red/Crimson
-          const t = (alpha - 155) / 60;
-          r = Math.floor(245 + (239 - 245) * t);
-          g = Math.floor(158 + (68 - 158) * t);
-          b = Math.floor(11 + (68 - 11) * t);
-          a = Math.floor(215 + 25 * t);
-        } else {
-          // Critical Center: Crimson to Hot White/Magenta
-          const t = (alpha - 215) / 40;
-          r = Math.floor(239 + (255 - 239) * t);
-          g = Math.floor(68 + (255 - 68) * t);
-          b = Math.floor(68 + (255 - 68) * t);
-          a = Math.min(255, Math.floor(240 + 15 * t));
-        }
-
-        outData[i] = r;
-        outData[i + 1] = g;
-        outData[i + 2] = b;
-        outData[i + 3] = a;
+    const drawHeatMap = () => {
+      // Synchronize canvas resolution with display size
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
       }
-    }
 
-    ctx.putImageData(outImg, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
+      // Heat radius mapping
+      let radius = 55;
+      if (heatMapRadius === 'compact') radius = 38;
+      if (heatMapRadius === 'wide') radius = 75;
+
+      // Intensity alpha multiplier
+      let intensityMultiplier = 1.0;
+      if (heatMapIntensity === 'standard') intensityMultiplier = 0.75;
+      if (heatMapIntensity === 'ultra') intensityMultiplier = 1.35;
+
+      // Step 1: Create an offscreen canvas to accumulate density as grayscale alpha
+      const offscreen = document.createElement('canvas');
+      offscreen.width = width;
+      offscreen.height = height;
+      const offCtx = offscreen.getContext('2d');
+      if (!offCtx) return;
+
+      // Plot each active sighting as a radial Gaussian density blob
+      activeReports.forEach(rep => {
+        const coords = toMapCoords(rep.location.lat, rep.location.lng);
+        const px = (coords.x / 100) * width;
+        const py = (coords.y / 100) * height;
+
+        // Bonus weight for high-credibility sightings or close encounters
+        let weight = 1.0;
+        if (rep.classification.hynek.startsWith('CE-')) weight = 1.3;
+        if (rep.credibilityScore > 90) weight += 0.2;
+
+        const radGrad = offCtx.createRadialGradient(px, py, 2, px, py, radius);
+        radGrad.addColorStop(0, `rgba(0, 0, 0, ${Math.min(1.0, 0.45 * weight * intensityMultiplier)})`);
+        radGrad.addColorStop(0.35, `rgba(0, 0, 0, ${Math.min(1.0, 0.28 * weight * intensityMultiplier)})`);
+        radGrad.addColorStop(0.7, `rgba(0, 0, 0, ${Math.min(1.0, 0.12 * weight * intensityMultiplier)})`);
+        radGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        offCtx.fillStyle = radGrad;
+        offCtx.beginPath();
+        offCtx.arc(px, py, radius, 0, Math.PI * 2);
+        offCtx.fill();
+      });
+
+      // Also plot subtle background ambient density for established Omaha corridors
+      // to reflect historical MUFON sighting archives
+      hotspotZones.forEach(zone => {
+        const coords = toMapCoords(zone.centerLat, zone.centerLng);
+        const px = (coords.x / 100) * width;
+        const py = (coords.y / 100) * height;
+        const ambientRadius = radius * 1.25;
+
+        const radGrad = offCtx.createRadialGradient(px, py, 0, px, py, ambientRadius);
+        radGrad.addColorStop(0, `rgba(0, 0, 0, ${0.18 * intensityMultiplier})`);
+        radGrad.addColorStop(0.5, `rgba(0, 0, 0, ${0.08 * intensityMultiplier})`);
+        radGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        offCtx.fillStyle = radGrad;
+        offCtx.beginPath();
+        offCtx.arc(px, py, ambientRadius, 0, Math.PI * 2);
+        offCtx.fill();
+      });
+
+      // Step 2: Color-map the accumulated density to thermal radar palette
+      const imgData = offCtx.getImageData(0, 0, width, height);
+      const data = imgData.data;
+
+      // Palette Lookup: 0 to 255 alpha -> [r, g, b, alpha]
+      // Spectral progression:
+      // Low: Deep Cyan / Teal -> Mid: Emerald / Yellow -> High: Radiant Orange / Crimson -> Ultra: Pure Hot White
+      const outImg = ctx.createImageData(width, height);
+      const outData = outImg.data;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const alpha = data[i + 3];
+        if (alpha > 0) {
+          let r = 0, g = 0, b = 0, a = alpha;
+
+          if (alpha < 45) {
+            // Deep Navy / Cyan boundary
+            const t = alpha / 45;
+            r = Math.floor(6 * t);
+            g = Math.floor(182 * t);
+            b = Math.floor(212 * t);
+            a = Math.floor(alpha * 0.9);
+          } else if (alpha < 95) {
+            // Cyan to Emerald transition
+            const t = (alpha - 45) / 50;
+            r = Math.floor(6 + (16 - 6) * t);
+            g = Math.floor(182 + (185 - 182) * t);
+            b = Math.floor(212 + (129 - 212) * t);
+            a = Math.floor(130 + 50 * t);
+          } else if (alpha < 155) {
+            // Emerald to Vibrant Amber/Yellow
+            const t = (alpha - 95) / 60;
+            r = Math.floor(16 + (245 - 16) * t);
+            g = Math.floor(185 + (158 - 185) * t);
+            b = Math.floor(129 + (11 - 129) * t);
+            a = Math.floor(180 + 35 * t);
+          } else if (alpha < 215) {
+            // Amber to Searing Red/Crimson
+            const t = (alpha - 155) / 60;
+            r = Math.floor(245 + (239 - 245) * t);
+            g = Math.floor(158 + (68 - 158) * t);
+            b = Math.floor(11 + (68 - 11) * t);
+            a = Math.floor(215 + 25 * t);
+          } else {
+            // Critical Center: Crimson to Hot White/Magenta
+            const t = (alpha - 215) / 40;
+            r = Math.floor(239 + (255 - 239) * t);
+            g = Math.floor(68 + (255 - 68) * t);
+            b = Math.floor(68 + (255 - 68) * t);
+            a = Math.min(255, Math.floor(240 + 15 * t));
+          }
+
+          outData[i] = r;
+          outData[i + 1] = g;
+          outData[i + 2] = b;
+          outData[i + 3] = a;
+        }
+      }
+
+      ctx.putImageData(outImg, 0, 0);
+    };
+    drawHeatMap();
+    const observer = new ResizeObserver(drawHeatMap);
+    observer.observe(canvas);
+    return () => observer.disconnect();
   }, [activeReports, showHeatMap, heatMapIntensity, heatMapRadius, viewMode, hotspotZones]);
 
   return (
