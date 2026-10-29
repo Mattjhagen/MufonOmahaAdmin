@@ -1,4 +1,4 @@
-export type ReportStatus = 'pending' | 'approved' | 'rejected';
+export type ReportStatus = 'draft' | 'pending' | 'approved' | 'rejected';
 
 export type HynekScale = 
   | 'NL'    // Nocturnal Light
@@ -140,6 +140,7 @@ export type AuditActionType =
   | 'REJECT_REPORT'
   | 'EDIT_REPORT'
   | 'CREATE_REPORT'
+  | 'PUBLISH_DRAFT'
   | 'UPDATE_USER_ROLE'
   | 'TOGGLE_USER_STATUS'
   | 'RESET_PASSWORD'

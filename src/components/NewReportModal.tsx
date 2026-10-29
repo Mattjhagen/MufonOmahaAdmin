@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Plus, ShieldCheck, MapPin, Calendar, Clock, AlertCircle } from 'lucide-react';
-import { SightingReport, HynekScale, ObjectShape } from '../types';
+import { X, Plus, ShieldCheck, MapPin, Calendar, Clock, AlertCircle, FileEdit } from 'lucide-react';
+import { SightingReport, HynekScale, ObjectShape, ReportStatus } from '../types';
 
 interface NewReportModalProps {
   onClose: () => void;
@@ -45,10 +45,80 @@ export const NewReportModal: React.FC<NewReportModalProps> = ({
   const [sound, setSound] = useState('Completely silent');
   
   // Status
-  const [status, setStatus] = useState<'pending' | 'approved'>('pending');
+  const [status, setStatus] = useState<ReportStatus>('pending');
   const [credibilityScore, setCredibilityScore] = useState(80);
 
   const [error, setError] = useState('');
+
+  // Handle saving incomplete draft without strict validation
+  const handleSaveAsDraft = () => {
+    const finalTitle = title.trim() || `Draft Sighting Intake (${date})`;
+    const finalDesc = description.trim() || 'Incomplete witness debrief saved by investigator. Additional details pending.';
+    
+    const redactedName = isAnonymous
+      ? `Witness (${city} Resident${witnessOccupation ? ` / ${witnessOccupation}` : ''})`
+      : witnessName || 'Witness';
+
+    const draftReport: SightingReport = {
+      id: `rep-${Date.now()}`,
+      caseNumber,
+      title: finalTitle.startsWith('[DRAFT]') ? finalTitle : `[DRAFT] ${finalTitle}`,
+      description: finalDesc,
+      date,
+      time,
+      location: {
+        address: address.trim() || 'Omaha Metro area',
+        city,
+        state,
+        zip,
+        lat: 41.2565,
+        lng: -95.9345,
+        landmarkProximity: landmarkProximity.trim() || `${city} area`
+      },
+      witness: {
+        name: witnessName.trim() || 'Confidential Witness (Incomplete)',
+        email: witnessEmail.trim() || 'unlisted@mufon.org',
+        phone: witnessPhone.trim() || '(402) 555-0000',
+        occupation: witnessOccupation.trim() || undefined,
+        isAnonymous,
+        redactedName
+      },
+      classification: {
+        hynek,
+        shape,
+        duration,
+        color,
+        estimatedAltitude,
+        estimatedSpeed: 'Variable',
+        sound
+      },
+      conditions: {
+        weather: 'Clear',
+        visibility: '10 miles',
+        moonPhase: 'Waxing',
+        cloudCover: '10%'
+      },
+      status: 'draft',
+      moderationNotes: 'DRAFT: Incomplete intake saved by field investigator. Hidden from main active queue.',
+      credibilityScore,
+      fieldNotes: [
+        {
+          id: `fn-${Date.now()}`,
+          author: 'Field Investigator',
+          timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          note: 'Saved as draft. Witness interview pending completion.',
+          type: 'internal'
+        }
+      ],
+      media: [],
+      isPublishedToPublic: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    onAddReport(draftReport);
+    onClose();
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,6 +237,7 @@ export const NewReportModal: React.FC<NewReportModalProps> = ({
                 onChange={(e) => setStatus(e.target.value as any)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
               >
+                <option value="draft">Draft (Incomplete - Hidden from Main Queue)</option>
                 <option value="pending">Pending Triage (Awaiting FI Review)</option>
                 <option value="approved">Approved & Direct Publish to Public</option>
               </select>
@@ -382,21 +453,33 @@ export const NewReportModal: React.FC<NewReportModalProps> = ({
           </div>
 
           {/* Submit Actions */}
-          <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-3">
+          <div className="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-colors"
+              onClick={handleSaveAsDraft}
+              className="px-4 py-2 rounded-lg font-medium bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 transition-colors flex items-center gap-1.5"
+              title="Save partial notes as incomplete draft (hidden from main queue)"
             >
-              Cancel
+              <FileEdit className="w-4 h-4 text-cyan-400" />
+              <span>Save as Incomplete Draft</span>
             </button>
-            <button
-              type="submit"
-              className="px-5 py-2 rounded-lg font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition-colors flex items-center gap-2 shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Submit & Create Case File</span>
-            </button>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 rounded-lg font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition-colors flex items-center gap-2 shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Submit & Create Case File</span>
+              </button>
+            </div>
           </div>
         </form>
       </div>

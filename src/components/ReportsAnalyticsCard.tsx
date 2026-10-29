@@ -74,12 +74,19 @@ export const ReportsAnalyticsCard: React.FC<ReportsAnalyticsCardProps> = ({ repo
     const pending = reports.filter(r => r.status === 'pending').length;
     const approved = reports.filter(r => r.status === 'approved').length;
     const rejected = reports.filter(r => r.status === 'rejected').length;
+    const drafts = reports.filter(r => r.status === 'draft').length;
 
-    return [
+    const data = [
       { name: 'Approved & Public', value: approved, color: '#10b981' },
       { name: 'Pending Triage', value: pending, color: '#f59e0b' },
       { name: 'Identified IFO / Rejected', value: rejected, color: '#f43f5e' }
     ];
+
+    if (drafts > 0) {
+      data.push({ name: 'Draft (Incomplete)', value: drafts, color: '#06b6d4' });
+    }
+
+    return data;
   }, [reports]);
 
   // Hynek Distribution data

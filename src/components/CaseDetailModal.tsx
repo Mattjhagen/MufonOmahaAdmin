@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   X, CheckCircle2, XCircle, ShieldCheck, MapPin, Calendar, Clock, 
   User, Phone, Mail, Lock, Sparkles, Sliders, Eye, Image as ImageIcon,
-  FileText, Plus, Radio, AlertCircle, Save, Check
+  FileText, Plus, Radio, AlertCircle, Save, Check, FileEdit
 } from 'lucide-react';
 import { SightingReport, HynekScale, ObjectShape, FieldNote, UserAccount } from '../types';
 
@@ -223,6 +223,31 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Triage & Status Control Bar */}
+              {formData.status === 'draft' && (
+                <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex items-center justify-between gap-4 text-xs">
+                  <div className="flex items-center gap-3">
+                    <span className="p-2 rounded-lg bg-slate-900 border border-slate-700 text-cyan-400">
+                      <FileEdit className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <div className="font-semibold text-white">Incomplete Draft Case File</div>
+                      <p className="text-slate-400">This report is hidden from the main queue and public site while an investigator works on it.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const updated: SightingReport = { ...formData, status: 'pending' };
+                      setFormData(updated);
+                      onSave(updated);
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition-colors shadow-sm flex items-center gap-1.5"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Promote to Pending Queue</span>
+                  </button>
+                </div>
+              )}
+
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-slate-400 font-medium">Status:</span>
@@ -232,6 +257,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                     disabled={!canEdit}
                     className="bg-slate-900 border border-slate-800 rounded px-2.5 py-1 text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-500"
                   >
+                    <option value="draft">Draft (Incomplete - Hidden from Main Queue)</option>
                     <option value="pending">Pending Triage</option>
                     <option value="approved">Approved & Published</option>
                     <option value="rejected">Rejected / Identified IFO</option>
@@ -970,7 +996,21 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {formData.status !== 'approved' && (
+            {formData.status === 'draft' && (
+              <button
+                onClick={() => {
+                  const updated: SightingReport = { ...formData, status: 'pending' };
+                  setFormData(updated);
+                  onSave(updated);
+                }}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition-colors flex items-center gap-1.5 shadow-sm"
+              >
+                <FileEdit className="w-3.5 h-3.5" />
+                <span>Submit Draft to Queue</span>
+              </button>
+            )}
+
+            {formData.status !== 'approved' && formData.status !== 'draft' && (
               <button
                 onClick={() => {
                   onApprove(formData.id);

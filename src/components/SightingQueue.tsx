@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   Search, Filter, CheckCircle2, XCircle, Edit3, Eye, AlertTriangle, 
   MapPin, Clock, Calendar, ShieldAlert, Sparkles, Check, ChevronRight,
-  ShieldCheck, ArrowUpRight, X, RotateCcw, SlidersHorizontal, Layers
+  ShieldCheck, ArrowUpRight, X, RotateCcw, SlidersHorizontal, Layers, FileEdit
 } from 'lucide-react';
 import { SightingReport, ReportStatus, HynekScale, RejectionReason } from '../types';
 import { ReportsAnalyticsCard } from './ReportsAnalyticsCard';
@@ -14,6 +14,7 @@ interface SightingQueueProps {
   onSelectReport: (report: SightingReport) => void;
   onEditReport: (report: SightingReport) => void;
   onOpenNewReport: () => void;
+  onPublishDraft?: (reportId: string) => void;
   userRole: string;
 }
 
@@ -24,6 +25,7 @@ export const SightingQueue: React.FC<SightingQueueProps> = ({
   onSelectReport,
   onEditReport,
   onOpenNewReport,
+  onPublishDraft,
   userRole
 }) => {
   const [statusFilter, setStatusFilter] = useState<'all' | ReportStatus>('all');
@@ -34,21 +36,27 @@ export const SightingQueue: React.FC<SightingQueueProps> = ({
   const [selectedRejectReason, setSelectedRejectReason] = useState<RejectionReason>('Identified as Starlink');
   const [rejectNotes, setRejectNotes] = useState('');
 
-  // Counts
+  // Counts: drafts are accounted for separately so main queue shows active reports
   const counts = useMemo(() => {
     return {
-      all: reports.length,
+      all: reports.filter(r => r.status !== 'draft').length,
+      drafts: reports.filter(r => r.status === 'draft').length,
       pending: reports.filter(r => r.status === 'pending').length,
       approved: reports.filter(r => r.status === 'approved').length,
       rejected: reports.filter(r => r.status === 'rejected').length,
     };
   }, [reports]);
 
-  // Robust filtering by title, case number, status, and classification type
+  // Robust filtering: by default in the main queue ('all'), incomplete drafts are hidden
   const filteredReports = useMemo(() => {
     return reports.filter(report => {
-      // 1. Status Dropdown Filter
-      if (statusFilter !== 'all' && report.status !== statusFilter) return false;
+      // 1. Status Filter:
+      // 'all' = main active queue (drafts are hidden)
+      if (statusFilter === 'all') {
+        if (report.status === 'draft') return false;
+      } else {
+        if (report.status !== statusFilter) return false;
+      }
 
       // 2. Classification Type (Hynek Scale) Dropdown Filter
       if (hynekFilter !== 'all' && report.classification.hynek !== hynekFilter) return false;
@@ -180,7 +188,8 @@ export const SightingQueue: React.FC<SightingQueueProps> = ({
                 onChange={(e) => setStatusFilter(e.target.value as any)}
                 className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer"
               >
-                <option value="all" className="bg-slate-950 text-slate-200">All Statuses ({counts.all})</option>
+                <option value="all" className="bg-slate-950 text-slate-200">Main Queue ({counts.all})</option>
+                <option value="draft" className="bg-slate-950 text-cyan-300">Investigator Drafts ({counts.drafts})</option>
                 <option value="pending" className="bg-slate-950 text-amber-300">Pending Triage ({counts.pending})</option>
                 <option value="approved" className="bg-slate-950 text-emerald-300">Approved & Public ({counts.approved})</option>
                 <option value="rejected" className="bg-slate-950 text-rose-300">Rejected / IFO ({counts.rejected})</option>
@@ -241,8 +250,21 @@ export const SightingQueue: React.FC<SightingQueueProps> = ({
             )}
           </div>
 
-          {/* Quick Search Chips */}
+          {/* Quick Search Chips & Drafts Selector */}
           <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+            <button
+              onClick={() => setStatusFilter(statusFilter === 'draft' ? 'all' : 'draft')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-medium transition-colors ${
+                statusFilter === 'draft'
+                  ? 'bg-cyan-950 text-cyan-300 border-cyan-700 shadow-sm'
+                  : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
+              }`}
+            >
+              <FileEdit className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Drafts ({counts.drafts})</span>
+            </button>
+
+            <span className="text-slate-600">|</span>
             <span className="text-slate-500 hidden xl:inline">Quick Find:</span>
             <button
               onClick={() => setSearchQuery('NE-2026-0419')}
@@ -321,6 +343,12 @@ export const SightingQueue: React.FC<SightingQueueProps> = ({
                     </span>
 
                     {/* Status Label */}
+                    {report.status === 'draft' && (
+                      <span className="font-mono font-medium text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded border border-slate-700 flex items-center gap-1">
+                        <FileEdit className="w-3 h-3 text-cyan-400" />
+                        INCOMPLETE DRAFT (HIDDEN FROM MAIN QUEUE)
+                      </span>
+                    )}
                     {report.status === 'pending' && (
                       <span className="font-mono font-medium text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/60 flex items-center gap-1">
                         <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
@@ -421,7 +449,18 @@ export const SightingQueue: React.FC<SightingQueueProps> = ({
                   {/* Moderate Buttons */}
                   {canModerate && (
                     <div className="flex items-center gap-2">
-                      {report.status !== 'approved' && (
+                      {report.status === 'draft' && (
+                        <button
+                          onClick={() => onPublishDraft ? onPublishDraft(report.id) : onApprove(report.id)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white transition-colors flex items-center gap-1 shadow-sm"
+                          title="Promote this incomplete draft to active pending triage queue"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Submit to Queue</span>
+                        </button>
+                      )}
+
+                      {report.status !== 'approved' && report.status !== 'draft' && (
                         <button
                           onClick={() => onApprove(report.id)}
                           className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center gap-1 shadow-sm"

@@ -420,6 +420,63 @@ export const INITIAL_REPORTS: SightingReport[] = [
     isPublishedToPublic: true,
     createdAt: '2026-08-30T18:00:00Z',
     updatedAt: '2026-09-02T11:00:00Z'
+  },
+  {
+    id: 'rep-007',
+    caseNumber: 'NE-2026-0421',
+    title: '[DRAFT] Incomplete Voice Debrief: Amber Nodes along I-80 Gretna Corridor',
+    description: 'Initial phone intake notes: Motorist observed two amber glowing objects trailing a westbound commercial airliner at ~6,000 ft near I-80 Exit 432 (Gretna / Hwy 31). Witness phone line disconnected during initial narrative. Awaiting follow-up callback and smartphone video footage before promoting to active triage queue.',
+    date: '2026-10-27',
+    time: '20:15 CST',
+    location: {
+      address: 'I-80 & Hwy 31 Interchange',
+      city: 'Gretna',
+      state: 'NE',
+      zip: '68028',
+      lat: 41.1394,
+      lng: -96.2415,
+      landmarkProximity: '1.2 miles S of Gretna Outlet Mall'
+    },
+    witness: {
+      name: 'James K. (Partial Intake)',
+      email: 'jk_nebraska@gmail.com',
+      phone: '(402) 555-6671',
+      isAnonymous: true,
+      redactedName: 'Witness (Gretna Resident)'
+    },
+    classification: {
+      hynek: 'NL',
+      shape: 'Light Cluster',
+      duration: 'Incomplete (~2 min reported)',
+      color: 'Amber / Orange',
+      estimatedAltitude: '6,000 ft estimated',
+      estimatedSpeed: 'Matching airliner (~250 kts)',
+      sound: 'Unknown / inside vehicle'
+    },
+    conditions: {
+      weather: 'Clear, 52°F',
+      visibility: '10 miles',
+      moonPhase: 'Waning Gibbous',
+      cloudCover: '15%'
+    },
+    status: 'draft',
+    moderationNotes: 'DRAFT MODE: Incomplete intake. Field investigator callback scheduled for tomorrow evening. Hidden from public and main active queue.',
+    credibilityScore: 60,
+    assignedInvestigatorId: 'usr-002',
+    assignedInvestigatorName: 'David Miller (Senior FI)',
+    fieldNotes: [
+      {
+        id: 'fn-701',
+        author: 'David Miller',
+        timestamp: '2026-10-27 20:45',
+        note: 'Left voicemail with witness requesting raw video file recorded on iPhone.',
+        type: 'internal'
+      }
+    ],
+    media: [],
+    isPublishedToPublic: false,
+    createdAt: '2026-10-27T20:30:00Z',
+    updatedAt: '2026-10-27T20:45:00Z'
   }
 ];
 

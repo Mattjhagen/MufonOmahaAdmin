@@ -144,6 +144,13 @@ export const AuditLog: React.FC<AuditLogProps> = ({ logs, onSelectCaseNumber }) 
             <span>MANUAL INTAKE</span>
           </span>
         );
+      case 'PUBLISH_DRAFT':
+        return (
+          <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 flex items-center gap-1">
+            <FileText className="w-3 h-3 text-cyan-400" />
+            <span>PUBLISH DRAFT</span>
+          </span>
+        );
       case 'PROVISION_USER':
         return (
           <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 flex items-center gap-1">

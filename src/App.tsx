@@ -181,22 +181,65 @@ export default function App() {
     showToast(`Case ${rep?.caseNumber || ''} Classified as IFO (${reason})`, 'info');
   };
 
-  const handleSaveReportDetails = (updatedReport: SightingReport) => {
-    setReports(prev => prev.map(rep => rep.id === updatedReport.id ? updatedReport : rep));
-    setSelectedReport(updatedReport);
+  const handlePublishDraft = (reportId: string) => {
+    const rep = reports.find(r => r.id === reportId);
+    setReports(prev => prev.map(r => {
+      if (r.id === reportId) {
+        return {
+          ...r,
+          status: 'pending',
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return r;
+    }));
 
     logAuditEvent(
-      'EDIT_REPORT',
+      'PUBLISH_DRAFT',
       'sighting_report',
-      updatedReport.id,
-      `Case ${updatedReport.caseNumber}`,
-      `Modified report parameters: Hynek scale (${updatedReport.classification.hynek}), shape (${updatedReport.classification.shape}), or field notes.`,
-      undefined,
-      undefined,
+      reportId,
+      `Case ${rep?.caseNumber || reportId}`,
+      `Investigator completed initial case draft and published it to the active pending triage queue.`,
+      'Status: DRAFT',
+      'Status: PENDING',
       'info'
     );
 
-    showToast(`Saved updates for Case ${updatedReport.caseNumber}`, 'success');
+    showToast(`Draft Case ${rep?.caseNumber || ''} moved to Active Triage Queue`, 'success');
+  };
+
+  const handleSaveReportDetails = (updatedReport: SightingReport) => {
+    const oldReport = reports.find(r => r.id === updatedReport.id);
+    const wasDraftPromoted = oldReport?.status === 'draft' && updatedReport.status === 'pending';
+
+    setReports(prev => prev.map(rep => rep.id === updatedReport.id ? updatedReport : rep));
+    setSelectedReport(updatedReport);
+
+    if (wasDraftPromoted) {
+      logAuditEvent(
+        'PUBLISH_DRAFT',
+        'sighting_report',
+        updatedReport.id,
+        `Case ${updatedReport.caseNumber}`,
+        `Investigator finalized draft report and promoted to active pending triage queue.`,
+        'Status: DRAFT',
+        'Status: PENDING',
+        'info'
+      );
+      showToast(`Draft Case ${updatedReport.caseNumber} promoted to Active Triage Queue`, 'success');
+    } else {
+      logAuditEvent(
+        'EDIT_REPORT',
+        'sighting_report',
+        updatedReport.id,
+        `Case ${updatedReport.caseNumber}`,
+        `Modified report parameters: Hynek scale (${updatedReport.classification.hynek}), shape (${updatedReport.classification.shape}), or field notes.`,
+        oldReport ? `Status: ${oldReport.status.toUpperCase()}` : undefined,
+        `Status: ${updatedReport.status.toUpperCase()}`,
+        'info'
+      );
+      showToast(`Saved updates for Case ${updatedReport.caseNumber}`, 'success');
+    }
   };
 
   const handleAddNewReport = (newReport: SightingReport) => {
@@ -332,6 +375,7 @@ export default function App() {
               setIsEditingReport(true);
             }}
             onOpenNewReport={() => setIsNewReportOpen(true)}
+            onPublishDraft={handlePublishDraft}
             userRole={currentUser.role}
           />
         )}
