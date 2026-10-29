@@ -364,6 +364,7 @@ export default function App() {
         {currentTab === 'reports' && (
           <SightingQueue
             reports={reports}
+            users={users}
             onApprove={handleApproveReport}
             onReject={handleRejectReport}
             onSelectReport={(report) => {

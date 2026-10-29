@@ -4,11 +4,13 @@ import {
   MapPin, Clock, Calendar, ShieldAlert, Sparkles, Check, ChevronRight,
   ShieldCheck, ArrowUpRight, X, RotateCcw, SlidersHorizontal, Layers, FileEdit
 } from 'lucide-react';
-import { SightingReport, ReportStatus, HynekScale, RejectionReason } from '../types';
+import { SightingReport, ReportStatus, HynekScale, RejectionReason, UserAccount } from '../types';
 import { ReportsAnalyticsCard } from './ReportsAnalyticsCard';
+import { QuickSummaryWidget } from './QuickSummaryWidget';
 
 interface SightingQueueProps {
   reports: SightingReport[];
+  users?: UserAccount[];
   onApprove: (reportId: string) => void;
   onReject: (reportId: string, reason: RejectionReason, notes?: string) => void;
   onSelectReport: (report: SightingReport) => void;
@@ -20,6 +22,7 @@ interface SightingQueueProps {
 
 export const SightingQueue: React.FC<SightingQueueProps> = ({
   reports,
+  users = [],
   onApprove,
   onReject,
   onSelectReport,
@@ -104,43 +107,13 @@ export const SightingQueue: React.FC<SightingQueueProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Metrics Banner */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
-          <div className="text-xs text-slate-400 font-medium">Total Sighting Cases</div>
-          <div className="mt-1 flex items-baseline justify-between">
-            <span className="text-2xl font-bold font-mono text-white">{counts.all}</span>
-            <span className="text-xs text-slate-500">Omaha & E. Nebraska</span>
-          </div>
-        </div>
-
-        <div className="bg-slate-900/60 border border-amber-500/30 p-4 rounded-xl">
-          <div className="text-xs text-amber-400 font-medium flex items-center justify-between">
-            <span>Pending Triage</span>
-            <span className="flex h-2 w-2 rounded-full bg-amber-400 animate-ping" />
-          </div>
-          <div className="mt-1 flex items-baseline justify-between">
-            <span className="text-2xl font-bold font-mono text-amber-300">{counts.pending}</span>
-            <span className="text-xs text-amber-400/70">Awaiting FI Review</span>
-          </div>
-        </div>
-
-        <div className="bg-slate-900/60 border border-emerald-500/30 p-4 rounded-xl">
-          <div className="text-xs text-emerald-400 font-medium">Approved & Public</div>
-          <div className="mt-1 flex items-baseline justify-between">
-            <span className="text-2xl font-bold font-mono text-emerald-300">{counts.approved}</span>
-            <span className="text-xs text-emerald-400/70">Synced to mufonomaha.space</span>
-          </div>
-        </div>
-
-        <div className="bg-slate-900/60 border border-rose-500/30 p-4 rounded-xl">
-          <div className="text-xs text-rose-400 font-medium">Identified IFO / Rejected</div>
-          <div className="mt-1 flex items-baseline justify-between">
-            <span className="text-2xl font-bold font-mono text-rose-300">{counts.rejected}</span>
-            <span className="text-xs text-rose-400/70">Starlink / Drone / Hoax</span>
-          </div>
-        </div>
-      </div>
+      {/* Quick Summary Dashboard Widget (Average Time to Disposition & Total Active Investigators) */}
+      <QuickSummaryWidget 
+        reports={reports} 
+        users={users}
+        onFilterStatus={(status) => setStatusFilter(status)}
+        onSelectReport={onSelectReport}
+      />
 
       {/* Recharts Analytics Dashboard Card (30-Day Trend & Status Distribution) */}
       <ReportsAnalyticsCard reports={reports} />
