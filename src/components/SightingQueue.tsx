@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   Search, Filter, CheckCircle2, XCircle, Edit3, Eye, AlertTriangle, 
   MapPin, Clock, Calendar, ShieldAlert, Sparkles, Check, ChevronRight,
-  ShieldCheck, ArrowUpRight
+  ShieldCheck, ArrowUpRight, X, RotateCcw, SlidersHorizontal, Layers
 } from 'lucide-react';
 import { SightingReport, ReportStatus, HynekScale, RejectionReason } from '../types';
 
@@ -27,6 +27,7 @@ export const SightingQueue: React.FC<SightingQueueProps> = ({
 }) => {
   const [statusFilter, setStatusFilter] = useState<'all' | ReportStatus>('all');
   const [hynekFilter, setHynekFilter] = useState<'all' | HynekScale>('all');
+  const [shapeFilter, setShapeFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [rejectingReportId, setRejectingReportId] = useState<string | null>(null);
   const [selectedRejectReason, setSelectedRejectReason] = useState<RejectionReason>('Identified as Starlink');
@@ -42,26 +43,45 @@ export const SightingQueue: React.FC<SightingQueueProps> = ({
     };
   }, [reports]);
 
-  // Filtered reports
+  // Robust filtering by title, case number, status, and classification type
   const filteredReports = useMemo(() => {
     return reports.filter(report => {
+      // 1. Status Dropdown Filter
       if (statusFilter !== 'all' && report.status !== statusFilter) return false;
+
+      // 2. Classification Type (Hynek Scale) Dropdown Filter
       if (hynekFilter !== 'all' && report.classification.hynek !== hynekFilter) return false;
+
+      // 3. Object Shape Dropdown Filter
+      if (shapeFilter !== 'all' && report.classification.shape !== shapeFilter) return false;
+
+      // 4. Robust Search Query: prioritize Title or Case Number
       if (searchQuery.trim() !== '') {
-        const q = searchQuery.toLowerCase();
-        const matches = 
-          report.caseNumber.toLowerCase().includes(q) ||
-          report.title.toLowerCase().includes(q) ||
+        const q = searchQuery.toLowerCase().trim();
+        const matchesCaseNumber = report.caseNumber.toLowerCase().includes(q);
+        const matchesTitle = report.title.toLowerCase().includes(q);
+        const matchesLocation = 
           report.location.city.toLowerCase().includes(q) ||
-          report.location.landmarkProximity.toLowerCase().includes(q) ||
-          report.description.toLowerCase().includes(q) ||
-          report.witness.name.toLowerCase().includes(q) ||
-          report.classification.shape.toLowerCase().includes(q);
-        if (!matches) return false;
+          report.location.landmarkProximity.toLowerCase().includes(q);
+        const matchesShape = report.classification.shape.toLowerCase().includes(q);
+        const matchesWitness = report.witness.name.toLowerCase().includes(q);
+
+        if (!matchesCaseNumber && !matchesTitle && !matchesLocation && !matchesShape && !matchesWitness) {
+          return false;
+        }
       }
       return true;
     });
-  }, [reports, statusFilter, hynekFilter, searchQuery]);
+  }, [reports, statusFilter, hynekFilter, shapeFilter, searchQuery]);
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('all');
+    setHynekFilter('all');
+    setShapeFilter('all');
+  };
+
+  const isFiltered = searchQuery.trim() !== '' || statusFilter !== 'all' || hynekFilter !== 'all' || shapeFilter !== 'all';
 
   const handleConfirmReject = () => {
     if (rejectingReportId) {
@@ -113,84 +133,137 @@ export const SightingQueue: React.FC<SightingQueueProps> = ({
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-xl flex flex-wrap items-center justify-between gap-4">
-        {/* Status Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
-          <button
-            onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
-              statusFilter === 'all'
-                ? 'bg-slate-800 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            All Reports ({counts.all})
-          </button>
-          <button
-            onClick={() => setStatusFilter('pending')}
-            className={`px-3 py-1.5 rounded-md font-medium transition-colors flex items-center gap-1.5 ${
-              statusFilter === 'pending'
-                ? 'bg-amber-950 text-amber-300 border border-amber-800/60 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <span>Pending Triage</span>
-            <span className="px-1.5 py-0.2 rounded text-[10px] bg-amber-500/20 text-amber-300">
-              {counts.pending}
-            </span>
-          </button>
-          <button
-            onClick={() => setStatusFilter('approved')}
-            className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
-              statusFilter === 'approved'
-                ? 'bg-emerald-950 text-emerald-300 border border-emerald-800/60 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Approved ({counts.approved})
-          </button>
-          <button
-            onClick={() => setStatusFilter('rejected')}
-            className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
-              statusFilter === 'rejected'
-                ? 'bg-rose-950 text-rose-300 border border-rose-800/60 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Rejected / IFO ({counts.rejected})
-          </button>
-        </div>
-
-        {/* Search & Hynek Filters */}
-        <div className="flex flex-wrap items-center gap-3 flex-1 justify-end">
-          <div className="relative min-w-[220px] max-w-sm flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+      {/* Robust Search & Filter Controls Panel */}
+      <div className="bg-slate-900/80 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-4">
+        {/* Row 1: Primary Robust Search Bar */}
+        <div className="relative">
+          <div className="relative flex items-center">
+            <Search className="w-4 h-4 absolute left-3.5 text-cyan-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search case #, location, witness, shape..."
+              placeholder="Search reports by title or case number (e.g. 'Chevron', 'NE-2026-0419', 'Tic-Tac')..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl pl-10 pr-28 py-2.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-colors shadow-inner"
             />
+            {/* Clear Search & Results Count */}
+            <div className="absolute right-3 flex items-center gap-2">
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  title="Clear search query"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <span className="font-mono text-[10px] text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-800">
+                {filteredReports.length} {filteredReports.length === 1 ? 'match' : 'matches'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2: Streamlined Dropdown Filters & Status Tabs */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          {/* Dropdown Filters Group */}
+          <div className="flex flex-wrap items-center gap-2.5 text-xs">
+            {/* Status Dropdown */}
+            <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800">
+              <span className="text-slate-400 font-medium">Status:</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer"
+              >
+                <option value="all" className="bg-slate-950 text-slate-200">All Statuses ({counts.all})</option>
+                <option value="pending" className="bg-slate-950 text-amber-300">Pending Triage ({counts.pending})</option>
+                <option value="approved" className="bg-slate-950 text-emerald-300">Approved & Public ({counts.approved})</option>
+                <option value="rejected" className="bg-slate-950 text-rose-300">Rejected / IFO ({counts.rejected})</option>
+              </select>
+            </div>
+
+            {/* Classification Type Dropdown (Hynek Scale) */}
+            <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800">
+              <Filter className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-slate-400 font-medium">Classification:</span>
+              <select
+                value={hynekFilter}
+                onChange={(e) => setHynekFilter(e.target.value as any)}
+                className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer"
+              >
+                <option value="all" className="bg-slate-950 text-slate-200">All Classifications</option>
+                <option value="NL" className="bg-slate-950 text-cyan-300">NL - Nocturnal Light</option>
+                <option value="DD" className="bg-slate-950 text-cyan-300">DD - Daylight Disc</option>
+                <option value="RV" className="bg-slate-950 text-cyan-300">RV - Radar-Visual</option>
+                <option value="CE-I" className="bg-slate-950 text-amber-300">CE-I - Close Encounter 1st (&lt;500 ft)</option>
+                <option value="CE-II" className="bg-slate-950 text-amber-300">CE-II - Physical / EM Traces</option>
+                <option value="CE-III" className="bg-slate-950 text-rose-300">CE-III - Occupants / Entities</option>
+                <option value="CE-IV" className="bg-slate-950 text-rose-300">CE-IV - Abduction / Lost Time</option>
+                <option value="CE-V" className="bg-slate-950 text-purple-300">CE-V - Direct Contact (CE-5)</option>
+              </select>
+            </div>
+
+            {/* Object Shape Dropdown */}
+            <div className="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800">
+              <Layers className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="text-slate-400 font-medium">Shape:</span>
+              <select
+                value={shapeFilter}
+                onChange={(e) => setShapeFilter(e.target.value)}
+                className="bg-transparent text-slate-200 font-semibold focus:outline-none cursor-pointer"
+              >
+                <option value="all" className="bg-slate-950 text-slate-200">All Shapes</option>
+                <option value="Chevron" className="bg-slate-950 text-slate-200">Chevron / Boomerang</option>
+                <option value="Tic-Tac" className="bg-slate-950 text-slate-200">Tic-Tac Capsule</option>
+                <option value="Triangle" className="bg-slate-950 text-slate-200">Triangle / Trilateral</option>
+                <option value="Sphere" className="bg-slate-950 text-slate-200">Sphere / Orb</option>
+                <option value="Disc" className="bg-slate-950 text-slate-200">Disc / Saucer</option>
+                <option value="Cylinder / Cigar" className="bg-slate-950 text-slate-200">Cylinder / Cigar</option>
+                <option value="Light Cluster" className="bg-slate-950 text-slate-200">Light Cluster</option>
+              </select>
+            </div>
+
+            {/* Reset Filters Button */}
+            {isFiltered && (
+              <button
+                onClick={handleResetFilters}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors"
+                title="Reset all search queries and dropdown filters"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset Filters</span>
+              </button>
+            )}
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-slate-400">
-            <Filter className="w-3.5 h-3.5" />
-            <span>Hynek:</span>
-            <select
-              value={hynekFilter}
-              onChange={(e) => setHynekFilter(e.target.value as any)}
-              className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+          {/* Quick Search Chips */}
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+            <span className="text-slate-500 hidden xl:inline">Quick Find:</span>
+            <button
+              onClick={() => setSearchQuery('NE-2026-0419')}
+              className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 hover:text-cyan-300 hover:border-cyan-800 transition-colors font-mono"
             >
-              <option value="all">All Scales</option>
-              <option value="NL">NL - Nocturnal Light</option>
-              <option value="DD">DD - Daylight Disc</option>
-              <option value="RV">RV - Radar-Visual</option>
-              <option value="CE-I">CE-I - Close Encounter 1st</option>
-              <option value="CE-II">CE-II - Physical Traces</option>
-              <option value="CE-III">CE-III - Occupants</option>
-            </select>
+              NE-2026-0419
+            </button>
+            <button
+              onClick={() => setSearchQuery('Tic-Tac')}
+              className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 hover:text-cyan-300 hover:border-cyan-800 transition-colors"
+            >
+              Tic-Tac
+            </button>
+            <button
+              onClick={() => setSearchQuery('Offutt')}
+              className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 hover:text-cyan-300 hover:border-cyan-800 transition-colors"
+            >
+              Offutt AFB
+            </button>
+            <button
+              onClick={() => setHynekFilter('CE-I')}
+              className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300 hover:text-amber-300 hover:border-amber-800 transition-colors font-mono"
+            >
+              CE-I
+            </button>
           </div>
         </div>
       </div>
@@ -199,16 +272,28 @@ export const SightingQueue: React.FC<SightingQueueProps> = ({
       {filteredReports.length === 0 ? (
         <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-12 text-center">
           <AlertTriangle className="w-8 h-8 text-slate-500 mx-auto mb-3" />
-          <h3 className="text-sm font-semibold text-slate-200">No sighting reports match your filters</h3>
+          <h3 className="text-sm font-semibold text-slate-200">No sighting reports match your search or filters</h3>
           <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-            Try adjusting your search query, status tab, or Hynek scale filter. Or manually intake a new sighting report.
+            {searchQuery ? `No reports found matching "${searchQuery}". ` : ''}
+            Try adjusting your search query, status dropdown, or classification type filter.
           </p>
-          <button
-            onClick={onOpenNewReport}
-            className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-600 hover:bg-cyan-500 text-white transition-colors"
-          >
-            Intake New Report Manually
-          </button>
+          <div className="mt-4 flex items-center justify-center gap-3">
+            {isFiltered && (
+              <button
+                onClick={handleResetFilters}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset All Filters</span>
+              </button>
+            )}
+            <button
+              onClick={onOpenNewReport}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-600 hover:bg-cyan-500 text-white transition-colors"
+            >
+              Intake New Report Manually
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">
