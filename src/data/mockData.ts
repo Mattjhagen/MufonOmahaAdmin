@@ -1,4 +1,4 @@
-import { SightingReport, UserAccount, PublicAnnouncement } from '../types';
+import { SightingReport, UserAccount, PublicAnnouncement, AuditLogEntry } from '../types';
 
 export const INITIAL_REPORTS: SightingReport[] = [
   {
@@ -517,3 +517,111 @@ export const INITIAL_ANNOUNCEMENTS: PublicAnnouncement[] = [
     isPublished: true
   }
 ];
+
+export const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [
+  {
+    id: 'aud-001',
+    timestamp: '2026-10-29 13:42:15 CST',
+    actor: {
+      id: 'usr-001',
+      name: 'Matt Hagen',
+      email: 'mattjhagen0@gmail.com',
+      role: 'admin'
+    },
+    action: 'APPROVE_REPORT',
+    targetType: 'sighting_report',
+    targetId: 'rep-002',
+    targetLabel: 'Case NE-2026-0412 (Standing Bear Lake)',
+    details: 'Approved report for publication on mufonomaha.space. Witness identity sanitized as Dr. Gregory Vance (Northwest Omaha).',
+    previousValue: 'Status: PENDING',
+    newValue: 'Status: APPROVED (Public Sync Active)',
+    severity: 'info'
+  },
+  {
+    id: 'aud-002',
+    timestamp: '2026-10-29 11:15:30 CST',
+    actor: {
+      id: 'usr-001',
+      name: 'Matt Hagen',
+      email: 'mattjhagen0@gmail.com',
+      role: 'admin'
+    },
+    action: 'UPDATE_USER_ROLE',
+    targetType: 'user',
+    targetId: 'usr-002',
+    targetLabel: 'User: David Miller',
+    details: 'Elevated user role to Field Investigator with badge credentials NE-014. Granted access to unredacted witness contact telemetry.',
+    previousValue: 'Role: REPORTER',
+    newValue: 'Role: FIELD_INVESTIGATOR',
+    severity: 'warning'
+  },
+  {
+    id: 'aud-003',
+    timestamp: '2026-10-28 16:50:00 CST',
+    actor: {
+      id: 'usr-001',
+      name: 'Matt Hagen',
+      email: 'mattjhagen0@gmail.com',
+      role: 'admin'
+    },
+    action: 'TOGGLE_USER_STATUS',
+    targetType: 'user',
+    targetId: 'usr-006',
+    targetLabel: 'User: Linda Kowalski',
+    details: 'Account disabled due to prolonged inactivity (>12 months) and failed bounce notifications. Revoked all active session tokens.',
+    previousValue: 'Status: ACTIVE',
+    newValue: 'Status: DISABLED',
+    severity: 'warning'
+  },
+  {
+    id: 'aud-004',
+    timestamp: '2026-10-26 18:22:10 CST',
+    actor: {
+      id: 'usr-003',
+      name: 'Sarah Vance',
+      email: 's.vance@mufonomaha.space',
+      role: 'moderator'
+    },
+    action: 'REJECT_REPORT',
+    targetType: 'sighting_report',
+    targetId: 'rep-003',
+    targetLabel: 'Case NE-2026-0388 (Papillion)',
+    details: 'Classified report as IFO: Identified as Starlink Group 10-12 orbital satellite pass. Courtesy explanation notification dispatched to witness.',
+    previousValue: 'Status: PENDING',
+    newValue: 'Status: REJECTED (IFO: Identified as Starlink)',
+    severity: 'info'
+  },
+  {
+    id: 'aud-005',
+    timestamp: '2026-10-25 14:35:40 CST',
+    actor: {
+      id: 'usr-001',
+      name: 'Matt Hagen',
+      email: 'mattjhagen0@gmail.com',
+      role: 'admin'
+    },
+    action: 'RESET_PASSWORD',
+    targetType: 'user',
+    targetId: 'usr-005',
+    targetLabel: 'User: Marcus Reed',
+    details: 'Initiated administrator password reset. Generated temporary 16-character secure credential with 24-hour expiration token.',
+    severity: 'info'
+  },
+  {
+    id: 'aud-006',
+    timestamp: '2026-10-25 03:20:10 CST',
+    actor: {
+      id: 'usr-003',
+      name: 'Sarah Vance',
+      email: 's.vance@mufonomaha.space',
+      role: 'moderator'
+    },
+    action: 'EDIT_REPORT',
+    targetType: 'sighting_report',
+    targetId: 'rep-001',
+    targetLabel: 'Case NE-2026-0419 (Bellevue / Offutt AFB)',
+    details: 'Updated classification coordinates and added witness anonymity flag per witness request. Assigned Senior FI David Miller.',
+    severity: 'info'
+  }
+];
+

@@ -1,15 +1,16 @@
 import React from 'react';
-import { Shield, Radio, Users, FileText, Code, Globe, Plus, LogOut, CheckCircle2 } from 'lucide-react';
+import { Shield, Radio, Users, FileText, Code, Globe, Plus, LogOut, CheckCircle2, History } from 'lucide-react';
 import { UserAccount } from '../types';
 
 interface HeaderProps {
-  currentTab: 'reports' | 'users' | 'codex' | 'radar' | 'public_sync';
-  setCurrentTab: (tab: 'reports' | 'users' | 'codex' | 'radar' | 'public_sync') => void;
+  currentTab: 'reports' | 'users' | 'codex' | 'radar' | 'public_sync' | 'audit';
+  setCurrentTab: (tab: 'reports' | 'users' | 'codex' | 'radar' | 'public_sync' | 'audit') => void;
   pendingCount: number;
   currentUser: UserAccount;
   onOpenNewReport: () => void;
   onSwitchUser: (userId: string) => void;
   allUsers: UserAccount[];
+  auditLogsCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -19,7 +20,8 @@ export const Header: React.FC<HeaderProps> = ({
   currentUser,
   onOpenNewReport,
   onSwitchUser,
-  allUsers
+  allUsers,
+  auditLogsCount
 }) => {
   return (
     <header className="border-b border-slate-800 bg-slate-950/90 backdrop-blur sticky top-0 z-40">
@@ -138,6 +140,18 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Globe className="w-3.5 h-3.5" />
             <span>Public Site Sync</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentTab('audit')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-colors ${
+              currentTab === 'audit'
+                ? 'bg-cyan-950 text-cyan-300 border border-cyan-800/60 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <History className="w-3.5 h-3.5" />
+            <span>Audit Logs</span>
           </button>
         </nav>
 

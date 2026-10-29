@@ -134,3 +134,36 @@ export interface PublicAnnouncement {
   content: string;
   isPublished: boolean;
 }
+
+export type AuditActionType =
+  | 'APPROVE_REPORT'
+  | 'REJECT_REPORT'
+  | 'EDIT_REPORT'
+  | 'CREATE_REPORT'
+  | 'UPDATE_USER_ROLE'
+  | 'TOGGLE_USER_STATUS'
+  | 'RESET_PASSWORD'
+  | 'PROVISION_USER'
+  | 'SYNC_PUBLIC_FEED';
+
+export type AuditSeverity = 'info' | 'warning' | 'critical';
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  actor: {
+    id: string;
+    name: string;
+    email: string;
+    role: UserRole;
+  };
+  action: AuditActionType;
+  targetType: 'sighting_report' | 'user' | 'public_feed';
+  targetId: string;
+  targetLabel: string;
+  details: string;
+  previousValue?: string;
+  newValue?: string;
+  severity: AuditSeverity;
+}
+
