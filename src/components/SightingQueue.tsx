@@ -5,6 +5,7 @@ import {
   ShieldCheck, ArrowUpRight, X, RotateCcw, SlidersHorizontal, Layers
 } from 'lucide-react';
 import { SightingReport, ReportStatus, HynekScale, RejectionReason } from '../types';
+import { ReportsAnalyticsCard } from './ReportsAnalyticsCard';
 
 interface SightingQueueProps {
   reports: SightingReport[];
@@ -132,6 +133,9 @@ export const SightingQueue: React.FC<SightingQueueProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Recharts Analytics Dashboard Card (30-Day Trend & Status Distribution) */}
+      <ReportsAnalyticsCard reports={reports} />
 
       {/* Robust Search & Filter Controls Panel */}
       <div className="bg-slate-900/80 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-4">
